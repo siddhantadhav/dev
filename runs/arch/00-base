@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Arch base packages — runs before everything else on this OS
+set -e
+pkg_install base-devel git curl unzip brightnessctl

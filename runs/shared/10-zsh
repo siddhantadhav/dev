@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+pkg_install zsh
+
+ZSH_PATH="$(command -v zsh)"
+grep -qx "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
+[[ "$SHELL" == "$ZSH_PATH" ]] || chsh -s "$ZSH_PATH"

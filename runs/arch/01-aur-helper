@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+command -v yay >/dev/null 2>&1 && exit 0
+
+dir="$(fetch_pkg https://aur.archlinux.org/yay-bin.git)"
+cd "$dir"
+makepkg -si --noconfirm

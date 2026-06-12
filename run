@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# run — execute environment scripts for this OS + profile.
+# usage: ./run [--dry] [filter]
+#   ./run            run everything
+#   ./run zsh        only scripts whose path matches "zsh"
+#   ./run --dry      print what would run
+set -euo pipefail
+
+cd "$(dirname "$0")"
+export DEV_ROOT="$PWD"
+source ./lib.sh
+
+DRY=""
+FILTER=""
+for arg in "$@"; do
+    case "$arg" in
+        --dry)     DRY=1 ;;
+        -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
+        *)         FILTER="$arg" ;;
+    esac
+done
+
+log "os=$DEV_OS  profile=$DEV_PROFILE"
+
+# order: OS base first, then shared tools, then profile extras.
+# within each dir, number prefixes (00-, 10-, ...) control order.
+shopt -s nullglob
+scripts=( "runs/$DEV_OS"/* runs/shared/* "runs/profile-$DEV_PROFILE"/* )
+
+for s in "${scripts[@]}"; do
+    [[ -f "$s" ]] || continue
+    [[ -n "$FILTER" && "$s" != *"$FILTER"* ]] && continue
+    if [[ -n "$DRY" ]]; then
+        log "[dry] $s"
+    else
+        log "[run] $s"
+        bash "$s"
+    fi
+done
+
+log "done"

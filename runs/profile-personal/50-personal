@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+link configs/personal/gitconfig "$HOME/.gitconfig.local"
+
+# personal-only tools go here, e.g.:
+# pkg_install obs-studio

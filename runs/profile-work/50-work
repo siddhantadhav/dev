@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+link configs/work/gitconfig "$HOME/.gitconfig.local"
+
+# work-only tools go here, e.g.:
+# pkg_install kubectl terraform

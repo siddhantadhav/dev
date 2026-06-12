@@ -1,0 +1,8 @@
+# managed by ~/dev — edit there, not here
+source "$HOME/.config/dev/profile.sh"
+
+export EDITOR=nvim
+alias vim=nvim
+alias ls='ls --color=auto'
+
+# your zsh config (prompt, plugins, etc.) goes below

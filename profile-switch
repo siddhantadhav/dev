@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+[[ -z "${1:-}" ]] && { echo "usage: ./switch <personal|work>"; exit 1; }
+[[ -d "$(dirname "$0")/runs/profile-$1" ]] || { echo "no such profile: $1"; exit 1; }
+
+mkdir -p ~/.config/dev
+echo "export DEV_PROFILE=$1" > ~/.config/dev/env
+exec "$(dirname "$0")/run"

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# bootstrap — take a bare Arch machine to the point where ./run can take over.
+# usage: bash <(curl -sSL https://raw.githubusercontent.com/siddhantadhav/dev/main/bootstrap)
+set -e
+
+REPO="https://github.com/siddhantadhav/dev"
+DEV_DIR="$HOME/dev"
+
+# --- minimal deps (git, sudo) ------------------------------------------------
+if ! command -v pacman >/dev/null 2>&1; then
+    echo "bootstrap: this setup currently supports Arch only" >&2
+    exit 1
+fi
+
+if [[ $EUID -eq 0 ]]; then
+    pacman -Sy --needed --noconfirm git sudo
+else
+    sudo pacman -Sy --needed --noconfirm git
+fi
+
+# --- clone the repo ------------------------------------------------------
+if [[ ! -d "$DEV_DIR" ]]; then
+    git clone "$REPO" "$DEV_DIR"
+fi
+
+# --- pick a profile on first run -------------------------------------------
+if [[ ! -f "$HOME/.config/dev/env" ]]; then
+    read -rp "profile (personal/work) [personal]: " p
+    mkdir -p "$HOME/.config/dev"
+    echo "export DEV_PROFILE=${p:-personal}" > "$HOME/.config/dev/env"
+fi
+
+cd "$DEV_DIR" && ./run
