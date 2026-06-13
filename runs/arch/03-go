@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+
+# already installed? leave it alone.
+{ command -v go >/dev/null 2>&1 || [[ -x /usr/local/go/bin/go ]]; } && exit 0
+
+case "$(uname -m)" in
+    x86_64)  arch=amd64 ;;
+    aarch64) arch=arm64 ;;
+    *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+esac
+
+# ask go.dev for the latest version, e.g. "go1.26.4"
+version="$(curl -fsSL https://go.dev/VERSION?m=text | head -n1)"
+tarball="${version}.linux-${arch}.tar.gz"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+curl -fsSL "https://go.dev/dl/${tarball}" -o "$tmp/$tarball"
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf "$tmp/$tarball"

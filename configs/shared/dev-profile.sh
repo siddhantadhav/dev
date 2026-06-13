@@ -10,8 +10,5 @@ addPath() {
 
 addPath "$HOME/.local/bin"
 addPath "$HOME/.local/scripts"
-
-
-if [[ "${DEV_PROFILE:-}" == work ]]; then
-    addPath "$HOME/work/tools/bin"
-fi
+addPath /usr/local/go/bin
+addPath "$HOME/go/bin"
