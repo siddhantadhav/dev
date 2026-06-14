@@ -17,6 +17,6 @@ tarball="${version}.linux-${arch}.tar.gz"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-curl -fsSL "https://go.dev/dl/${tarball}" -o "$tmp/$tarball"
+curl -fsSL "https://go.dev/dl/${tarball}" -o "$tmp/$tarball"GI
 sudo rm -rf /usr/local/go
 sudo tar -C /usr/local -xzf "$tmp/$tarball"

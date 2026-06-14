@@ -1,3 +1,5 @@
+[core]
+	sshCommand = "ssh -i /home/siddhant/.ssh/id_github -o IdentitiesOnly=yes"
 [user]
 	name = Siddhant Adhav
 	email = siddhant@karmamgmt.com

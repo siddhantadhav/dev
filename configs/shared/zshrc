@@ -5,4 +5,9 @@ export EDITOR=nvim
 alias vim=nvim
 alias ls='ls --color=auto'
 
-# your zsh config (prompt, plugins, etc.) goes below
+# profile-specific shell config (configs/<profile>/.zshrc)
+dev_root="${DEV_ROOT:-$(cd "$(dirname "$(readlink -f "$HOME/.config/dev/profile.sh")")/../.." && pwd)}"
+source "$dev_root/configs/${DEV_PROFILE:-personal}/.zshrc"
+unset dev_root
+
+

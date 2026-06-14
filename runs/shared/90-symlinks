@@ -4,3 +4,4 @@ set -e
 link configs/shared/zshrc          "$HOME/.zshrc"
 link configs/shared/dev-profile.sh "$HOME/.config/dev/profile.sh"
 link configs/shared/gitconfig      "$HOME/.gitconfig"
+link configs/shared/kitty.conf	   "$HOME/.config/kitty/kitty.conf"
