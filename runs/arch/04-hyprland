@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+command -v Hyprland >/dev/null 2>&1 || pkg_install hyprland
+
+link configs/arch/hypr "$HOME/.config/hypr"

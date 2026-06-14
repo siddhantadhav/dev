@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+command -v waybar >/dev/null 2>&1 || pkg_install waybar
+
+# JetBrainsMono Nerd Font — provides the icon glyphs used in style.css
+fc-list | grep -qi "JetBrainsMono Nerd Font" || pkg_install ttf-jetbrains-mono-nerd
+
+link configs/arch/waybar "$HOME/.config/waybar"
