@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+# The xdg-desktop-portal "appearance" interface broadcasts a color-scheme
+# preference that GTK4/libadwaita, Qt 6.5+, Firefox, Chromium/Electron and
+# VS Code all follow — so flipping this one signal darkens current AND future
+# apps. xdg-desktop-portal-gtk reads the preference from gsettings below.
+pacman -Qq xdg-desktop-portal-gtk    >/dev/null 2>&1 || pkg_install xdg-desktop-portal-gtk
+pacman -Qq gsettings-desktop-schemas >/dev/null 2>&1 || pkg_install gsettings-desktop-schemas
+
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Legacy GTK3/GTK4 apps that ignore the portal read these instead.
+link configs/arch/gtk-3.0/settings.ini "$HOME/.config/gtk-3.0/settings.ini"
+link configs/arch/gtk-4.0/settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+
+# Qt5/Qt6: Kvantum gives one dark theme for both versions, driven by the
+# QT_STYLE_OVERRIDE=kvantum env set in configs/arch/hypr/environment.lua.
+pacman -Qq kvantum     >/dev/null 2>&1 || pkg_install kvantum
+pacman -Qq kvantum-qt5 >/dev/null 2>&1 || pkg_install kvantum-qt5
+link configs/arch/Kvantum/kvantum.kvconfig "$HOME/.config/Kvantum/kvantum.kvconfig"

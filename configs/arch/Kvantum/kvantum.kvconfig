@@ -1,0 +1,5 @@
+[General]
+# Dark Kvantum theme applied to every Qt5 and Qt6 app via QT_STYLE_OVERRIDE.
+# KvGnomeDark is a built-in (ships with the `kvantum` package) and visually
+# pairs with the Adwaita-dark GTK theme. Swap with `kvantummanager` to taste.
+theme=KvGnomeDark
