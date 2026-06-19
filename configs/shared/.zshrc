@@ -46,9 +46,11 @@ precmd() {
 # (env) [profile] user@host ~/path  branch*   %
 PROMPT='${env_info_msg}%F{yellow}[${DEV_PROFILE:-personal}]%f %F{green}%n@%m%f %F{blue}%~%f${vcs_info_msg_0_} %(?.%F{green}.%F{red})%#%f '
 
-# profile-specific shell config (configs/<profile>/.zshrc)
+# profile-specific secrets (configs/<profile>/.zshrc.secret — git-ignored,
+# may not exist on a fresh machine, so source only if present)
 dev_root="${DEV_ROOT:-$(cd "$(dirname "$(readlink -f "$HOME/.config/dev/profile.sh")")/../.." && pwd)}"
-source "$dev_root/configs/${DEV_PROFILE:-personal}/.zshrc"
-unset dev_root
+secret="$dev_root/configs/${DEV_PROFILE:-personal}/.zshrc.secret"
+[[ -f "$secret" ]] && source "$secret"
+unset dev_root secret
 
 

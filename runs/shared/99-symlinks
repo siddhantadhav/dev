@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # symlink configs into place; the repo stays the source of truth
 set -e
-link configs/shared/zshrc          "$HOME/.zshrc"
+link configs/shared/.zshrc          "$HOME/.zshrc"
 link configs/shared/dev-profile.sh "$HOME/.config/dev/profile.sh"
 link configs/shared/gitconfig      "$HOME/.gitconfig"
 link configs/shared/kitty.conf	   "$HOME/.config/kitty/kitty.conf"
