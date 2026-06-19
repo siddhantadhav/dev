@@ -5,4 +5,6 @@ set -e
 
 mkdir -p ~/.config/dev
 echo "export DEV_PROFILE=$1" > ~/.config/dev/env
-exec "$(dirname "$0")/run"
+# only re-run the profile scripts (which re-link the gitconfig); a profile
+# switch shouldn't depend on the full OS/package provisioning succeeding.
+exec "$(dirname "$0")/run" "profile-$1"
