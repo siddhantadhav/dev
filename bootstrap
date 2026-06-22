@@ -7,15 +7,21 @@ REPO="https://github.com/siddhantadhav/dev"
 DEV_DIR="$HOME/dev"
 
 # --- minimal deps (git, sudo) ------------------------------------------------
-if ! command -v pacman >/dev/null 2>&1; then
-    echo "bootstrap: this setup currently supports Arch only" >&2
-    exit 1
-fi
-
-if [[ $EUID -eq 0 ]]; then
-    pacman -Sy --needed --noconfirm git sudo
+if command -v pacman >/dev/null 2>&1; then
+    if [[ $EUID -eq 0 ]]; then
+        pacman -Sy --needed --noconfirm git sudo
+    else
+        sudo pacman -Sy --needed --noconfirm git
+    fi
+elif command -v dnf >/dev/null 2>&1; then
+    if [[ $EUID -eq 0 ]]; then
+        dnf install -y git sudo
+    else
+        sudo dnf install -y git
+    fi
 else
-    sudo pacman -Sy --needed --noconfirm git
+    echo "bootstrap: need pacman (Arch) or dnf (Fedora)" >&2
+    exit 1
 fi
 
 # --- clone the repo ------------------------------------------------------

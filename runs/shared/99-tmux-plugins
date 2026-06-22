@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Install/refresh tmux plugins via TPM. OS-neutral (just git + tpm).
+#
+# Must run AFTER 99-symlinks: `install_plugins` reads the @plugin list from the
+# symlinked ~/.config/tmux/tmux.conf, so the symlink has to exist first.
+set -e
+
+TPM_DIR="$HOME/.config/tmux/plugins/tpm"
+
+# Idempotent: clone if missing, otherwise update. (Plain `git clone` fails on a
+# second run because the dir already exists, which would abort ./run.)
+if [[ -d "$TPM_DIR/.git" ]]; then
+    log "updating tpm"
+    git -C "$TPM_DIR" pull --ff-only
+else
+    log "cloning tpm"
+    rm -rf "$TPM_DIR"
+    git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
+fi
+
+# tmux.conf keeps plugins under ~/.config/tmux/plugins (not TPM's ~/.tmux/plugins
+# default), so point the installer there explicitly.
+export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
+
+# Cloning TPM alone does NOT install the plugins it manages (resurrect,
+# continuum, …); that needs this separate step.
+log "installing tmux plugins"
+"$TPM_DIR/bin/install_plugins"
