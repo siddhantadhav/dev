@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Install/refresh tmux plugins via TPM. OS-neutral (just git + tpm).
-#
-# Must run AFTER 99-symlinks: `install_plugins` reads the @plugin list from the
-# symlinked ~/.config/tmux/tmux.conf, so the symlink has to exist first.
+
 set -e
 
 TPM_DIR="$HOME/.config/tmux/plugins/tpm"
