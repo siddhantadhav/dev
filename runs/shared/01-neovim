@@ -1,3 +1,28 @@
 #!/usr/bin/env bash
 set -e
 pkg_install neovim
+
+# tree-sitter CLI — nvim-treesitter's 'main' branch builds parsers from source
+# and needs it on PATH. Installed per-user into ~/.local/bin (no system pkg).
+if ! command -v tree-sitter >/dev/null 2>&1; then
+    case "$(uname -m)" in
+        x86_64)  arch=x64 ;;
+        aarch64) arch=arm64 ;;
+        *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+    esac
+
+    # resolve the latest release tag via the /releases/latest redirect
+    tag="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+        https://github.com/tree-sitter/tree-sitter/releases/latest)"
+    tag="${tag##*/}"
+
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+
+    curl -fsSL "https://github.com/tree-sitter/tree-sitter/releases/download/${tag}/tree-sitter-linux-${arch}.gz" \
+        -o "$tmp/tree-sitter.gz"
+    gunzip "$tmp/tree-sitter.gz"
+    mkdir -p "$HOME/.local/bin"
+    install -m 0755 "$tmp/tree-sitter" "$HOME/.local/bin/tree-sitter"
+    log "installed tree-sitter $("$HOME/.local/bin/tree-sitter" --version) -> ~/.local/bin/tree-sitter"
+fi
