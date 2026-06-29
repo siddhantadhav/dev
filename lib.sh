@@ -11,6 +11,8 @@ if command -v pacman >/dev/null 2>&1; then
     DEV_OS=arch
 elif command -v dnf >/dev/null 2>&1; then
     DEV_OS=fedora
+elif command -v brew >/dev/null 2>&1; then
+    DEV_OS=macos
 else
     DEV_OS=unknown
 fi
@@ -23,9 +25,20 @@ log() { printf '\033[1;34m[dev]\033[0m %s\n' "$*"; }
 # shared scripts can stay OS-neutral.
 pkg_name() {
     local p="$1"
+
     case "$DEV_OS" in
-        fedora) case "$p" in github-cli) p=gh ;; esac ;;
+        fedora)
+            case "$p" in
+                github-cli) p=gh ;;
+            esac
+            ;;
+        macos)
+            case "$p" in
+                github-cli) p=gh ;;
+            esac
+            ;;
     esac
+
     printf '%s' "$p"
 }
 
@@ -35,6 +48,7 @@ pkg_install() {
     case "$DEV_OS" in
         arch)   sudo pacman -S --needed --noconfirm "${pkgs[@]}" ;;
         fedora) sudo dnf install -y "${pkgs[@]}" ;;
+        macos) brew install -y "${pkgs[@]}" ;;
         *)      log "pkg_install: unsupported OS '$DEV_OS'"; return 1 ;;
     esac
 }
