@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -e
+command -v thunar >/dev/null 2>&1 || pkg_install thunar

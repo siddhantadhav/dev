@@ -11,7 +11,13 @@ sudo tee /etc/NetworkManager/conf.d/wifi_backend.conf >/dev/null <<'EOF'
 wifi.backend=wpa_supplicant
 EOF
 
+sudo tee /etc/NetworkManager/conf.d/wifi-powersave.conf >/dev/null <<'EOF'
+[connection]
+wifi.powersave = 2
+EOF
+
 sudo systemctl disable --now iwd.service 2>/dev/null || true
+pkg_uninstall iwd 2>/dev/null || true 
 
 sudo systemctl enable --now wpa_supplicant
 sudo systemctl enable NetworkManager

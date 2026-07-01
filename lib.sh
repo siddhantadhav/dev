@@ -53,6 +53,17 @@ pkg_install() {
     esac
 }
 
+pkg_uninstall() {
+    local pkgs=() p
+    for p in "$@"; do pkgs+=( "$(pkg_name "$p")" ); done
+    case "$DEV_OS" in
+        arch)   sudo pacman -Rns "${pkgs[@]}" ;;
+        fedora) sudo dnf remove -y "${pkgs[@]}" ;;
+        macos) brew remove -y "${pkgs[@]}" ;;
+        *)      log "pkg_uninstall: unsupported OS '$DEV_OS'"; return 1 ;;
+    esac
+}
+
 link() {
     local src="$DEV_ROOT/$1" dst="$2"
     mkdir -p "$(dirname "$dst")"
