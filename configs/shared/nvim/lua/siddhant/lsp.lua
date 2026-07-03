@@ -47,16 +47,42 @@ vim.api.nvim_create_autocmd("LspAttach", {
         map("]d", function()
             vim.diagnostic.jump({ count = 1 })
         end, "Next diagnostic")
+    end,
+})
 
-        -- Format on save, only if the attached server can format this buffer.
-        local client = vim.lsp.get_client_by_id(event.data.client_id)
-        if client and client:supports_method("textDocument/formatting") then
-            vim.api.nvim_create_autocmd("BufWritePre", {
-                buffer = event.buf,
-                callback = function()
-                    vim.lsp.buf.format({ bufnr = event.buf, id = client.id })
-                end,
-            })
+-- Go autoimports: run gopls' source.organizeImports code action before write,
+-- independent of whether the goimports formatter is installed. General
+-- formatting is owned by conform.nvim (which falls back to LSP when no Mason
+-- formatter is available), so we do not register a generic LSP format-on-save.
+vim.api.nvim_create_autocmd("BufWritePre", {
+    pattern = "*.go",
+    callback = function(event)
+        local clients = vim.lsp.get_clients({ bufnr = event.buf, name = "gopls" })
+        local client = clients[1]
+        if not client then
+            return
+        end
+
+        local params = vim.lsp.util.make_range_params(0, client.offset_encoding)
+        params.context = { only = { "source.organizeImports" }, diagnostics = {} }
+
+        local ok, result = pcall(
+            vim.lsp.buf_request_sync,
+            event.buf,
+            "textDocument/codeAction",
+            params,
+            1000
+        )
+        if not ok or not result then
+            return
+        end
+
+        for _, res in pairs(result) do
+            for _, action in pairs(res.result or {}) do
+                if action.edit then
+                    pcall(vim.lsp.util.apply_workspace_edit, action.edit, client.offset_encoding)
+                end
+            end
         end
     end,
 })
