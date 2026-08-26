@@ -1,5 +1,6 @@
 require("siddhant.remap")
 require("siddhant.options")
 require("siddhant.lsp")
+require("siddhant.cpp")
 require("siddhant.colors")
 require("siddhant.lazy")
