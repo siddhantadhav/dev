@@ -1,5 +1,5 @@
 [core]
-	sshCommand = "ssh -i /Users/siddhant/.ssh/id_github -o IdentitiesOnly=yes"
+	sshCommand = "ssh -i ~/.ssh/id_github -o IdentitiesOnly=yes"
 
 [user]
 	name = Siddhant Adhav
