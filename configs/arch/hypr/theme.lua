@@ -8,4 +8,6 @@ return {
     inactive_border = "rgb(444444)",
     shadow          = 0xee1a1a1a,
     cursor          = "Adwaita",
+    active_opacity  = 1.0,
+    inactive_opacity = 1.0,
 }

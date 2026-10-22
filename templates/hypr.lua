@@ -4,4 +4,6 @@ return {
     inactive_border = "rgb(${surface_raw})",
     shadow          = 0xee${bg_dim_raw},
     cursor          = "${CURSOR_THEME}",
+    active_opacity  = ${WIN_ACTIVE},
+    inactive_opacity = ${WIN_INACTIVE},
 }

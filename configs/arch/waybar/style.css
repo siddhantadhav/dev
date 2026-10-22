@@ -1,10 +1,11 @@
-/* colours (@bg, @accent, …) come from the current ~/dev theme: theme.css is a
-   gitignored link to the file theme-apply renders */
+/* colours (@bg, @accent, @glass, …) come from the current ~/dev theme: theme.css
+   is a gitignored link to the file theme-apply renders. Panels are translucent
+   (@glass); Hyprland blurs behind them (layer rule in hypr/window-rules.lua). */
 @import "theme.css";
 
 * {
   font-family: JetbrainsMono Nerd Font;
-  font-size: 10px;
+  font-size: 12px;
   min-height: 0;
   padding-right: 2px;
   padding-left: 2px;
@@ -20,7 +21,8 @@
 #workspaces {
   border-radius: 5px;
   margin: 5px;
-  background: @bg_dim;
+  background: @glass;
+  border: 1px solid @glass_edge;
   margin-left: 2px;
 }
 
@@ -32,6 +34,7 @@
 
 #workspaces button.active {
   color: @accent;
+  background: @accent_tint;
   border-radius: 5px;
 }
 
@@ -40,7 +43,7 @@ button {
 }
 
 #workspaces button:hover {
-  background: @surface;
+  background: @glass_hover;
   border: 0px solid transparent;
 }
 
@@ -58,7 +61,9 @@ button {
 #custom-weather,
 #custom-uptime,
 #custom-docker {
-  background-color: @bg_dim;
+  background-color: @glass;
+  border-top: 1px solid @glass_edge;
+  border-bottom: 1px solid @glass_edge;
   padding: 0.5rem 1rem;
   margin: 5px 0;
 }

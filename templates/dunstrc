@@ -8,14 +8,14 @@
     highlight = "${accent}"
 
 [urgency_low]
-    background = "${bg}"
+    background = "${bg}${GLASS_HEX}"
     foreground = "${fg_dim}"
 
 [urgency_normal]
-    background = "${bg}"
+    background = "${bg}${GLASS_HEX}"
     foreground = "${fg}"
 
 [urgency_critical]
-    background = "${bg}"
+    background = "${bg}${GLASS_HEX}"
     foreground = "${fg}"
     frame_color = "${red}"

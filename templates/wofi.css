@@ -2,16 +2,17 @@
 window {
   margin: 0;
   border: 2px solid ${accent};
-  border-radius: 10px;
-  background-color: ${bg};
+  border-radius: 12px;
+  background-color: alpha(${bg}, ${GLASS_FRAC});
   font-family: JetBrainsMono Nerd Font;
 }
 
+/* the field you type in stays solid, so the query is always crisp */
 #input {
-  margin: 6px;
-  padding: 4px 8px;
+  margin: 8px;
+  padding: 6px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: ${fg};
   background-color: ${surface};
 }
@@ -19,9 +20,9 @@ window {
 #inner-box,
 #outer-box,
 #scroll {
-  margin: 0;
+  margin: 0 4px 4px;
   border: none;
-  background-color: ${bg};
+  background-color: transparent;
 }
 
 #text {
@@ -30,13 +31,17 @@ window {
 }
 
 #entry {
-  border-radius: 6px;
+  padding: 2px 4px;
+  border-radius: 8px;
 }
 
+/* tint behind the row + normal text colour: readable at any accent */
 #entry:selected {
-  background-color: ${surface};
+  background-color: alpha(${accent}, 0.22);
+  outline: none;
 }
 
 #entry:selected #text {
-  color: ${accent};
+  color: ${fg};
+  font-weight: bold;
 }

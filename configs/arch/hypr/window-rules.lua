@@ -43,3 +43,30 @@ hl.window_rule({
     move  = "20 monitor_h-120",
     float = true,
 })
+
+-- Glass exemptions. kitty does background-only transparency itself
+-- (templates/kitty.conf); Hyprland opacity on top would also fade its text.
+-- Photos and video should never be tinted by the wallpaper.
+hl.window_rule({
+    name  = "solid-kitty-and-media",
+    match = { class = "^(kitty|mpv|imv|org\\.gnome\\.Loupe|vlc)$" },
+
+    opacity = "1.0 override",
+})
+
+hl.window_rule({
+    name  = "solid-picture-in-picture",
+    match = { title = "^Picture-in-Picture$" },
+
+    opacity = "1.0 override",
+})
+
+-- Blur behind the translucent bar, launcher and notifications; ignore_alpha
+-- keeps the blur to their painted panels (not the fully clear gaps).
+hl.layer_rule({
+    name  = "glass-panels",
+    match = { namespace = "^(waybar|wofi|notifications)$" },
+
+    blur         = true,
+    ignore_alpha = 0.1,
+})

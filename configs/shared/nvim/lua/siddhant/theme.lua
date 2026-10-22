@@ -14,12 +14,17 @@ local function apply()
   end
 
   local hl = vim.api.nvim_set_hl
-  -- keep the terminal's (translucent) background showing through
+  -- the editor shows the terminal's glass through...
   hl(0, "Normal", { bg = "none" })
-  hl(0, "NormalFloat", { bg = "none" })
   hl(0, "FloatBorder", { bg = "none", fg = theme.accent })
   hl(0, "TelescopeBorder", { bg = "none", fg = theme.accent })
   hl(0, "CursorLineNr", { fg = theme.accent, bold = true })
+  -- ...but floats and menus sit over code, so they get a solid backdrop
+  if theme.bg_alt then
+    hl(0, "NormalFloat", { bg = theme.bg_alt })
+    hl(0, "Pmenu", { bg = theme.bg_alt, fg = theme.fg })
+    hl(0, "PmenuSel", { bg = theme.surface, fg = theme.fg, bold = true })
+  end
 end
 
 apply()

@@ -50,6 +50,8 @@ live; GTK/Qt apps when reopened, browsers on restart.
   the app configs include
 - `runs/arch/12-theme-pkgs` installs every theme's packages,
   `13-theme-system` does the sudo parts, `runs/shared/97-theme` the rest
+- `themes/_style.sh` — the look for every theme: transparency (glass), how much
+  darker the backgrounds get; values are tuned so text stays readable
 - New family: a palette file per variant + a `_<family>.sh`
 
 ## Adding things

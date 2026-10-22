@@ -3,4 +3,7 @@ return {
     colorscheme = "${NVIM_COLORSCHEME}",
     mode        = "${MODE}",
     accent      = "${accent}",
+    fg          = "${fg}",
+    bg_alt      = "${bg_alt}",
+    surface     = "${surface_alt}",
 }

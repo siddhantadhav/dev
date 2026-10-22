@@ -26,9 +26,11 @@ hl.config({
         rounding       = 10,
         rounding_power = 2,
 
-        -- Change transparency of focused and unfocused windows
-        active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        -- Glass: every window slightly see-through (~/dev/themes/_style.sh);
+        -- fullscreen stays solid, kitty/media are exempt in window-rules.lua
+        active_opacity     = theme.active_opacity,
+        inactive_opacity   = theme.inactive_opacity,
+        fullscreen_opacity = 1.0,
 
         shadow = {
             enabled      = true,
@@ -37,11 +39,17 @@ hl.config({
             color        = theme.shadow,
         },
 
+        -- heavy + dimmed so the wallpaper's neon reads as soft colour, not
+        -- shapes, behind text
         blur = {
-            enabled   = true,
-            size      = 3,
-            passes    = 1,
-            vibrancy  = 0.1696,
+            enabled    = true,
+            size       = 8,
+            passes     = 3,
+            brightness = 0.7,
+            contrast   = 0.9,
+            noise      = 0.02,
+            vibrancy   = 0.17,
+            popups     = true,
         },
     },
 

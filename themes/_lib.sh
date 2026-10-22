@@ -15,7 +15,21 @@ THEME_SLOTS="bg bg_alt bg_dim surface surface_alt overlay fg fg_dim
     color0 color1 color2 color3 color4 color5 color6 color7
     color8 color9 color10 color11 color12 color13 color14 color15"
 THEME_NAMES="MODE FAMILY VARIANT ACCENT GTK_THEME GTK_PREFER_DARK ICON_THEME
-    CURSOR_THEME KVANTUM_THEME NVIM_COLORSCHEME"
+    CURSOR_THEME KVANTUM_THEME NVIM_COLORSCHEME
+    GLASS_HEX GLASS_FRAC TERM_OPACITY WIN_ACTIVE WIN_INACTIVE"
+# slots that _style.sh pulls toward black: DARKEN for backgrounds, DEEPEN for
+# dim text and status colours (accent and terminal ANSI colours stay official)
+THEME_DARKEN_SLOTS="bg bg_alt bg_dim surface surface_alt"
+THEME_DEEPEN_SLOTS="fg_dim overlay red green yellow blue cyan magenta orange"
+
+# theme_mix <#rrggbb> <pct> — mix pct% toward black
+theme_mix() {
+    local hex=${1#\#} pct=$2 i out="#"
+    for i in 0 2 4; do
+        printf -v out '%s%02x' "$out" $(( 16#${hex:i:2} * (100 - pct) / 100 ))
+    done
+    echo "$out"
+}
 
 theme_list() {
     local f
@@ -45,6 +59,17 @@ theme_load() {
     : "${CURSOR_THEME:=Adwaita}"
     : "${ICON_THEME:=$( ((dark)) && echo Papirus-Dark || echo Papirus)}"
     : "${KVANTUM_THEME:=$( ((dark)) && echo KvGnomeDark || echo KvGnome)}"
+
+    . "$THEME_DIR/_style.sh"
+    local v
+    for v in $THEME_DARKEN_SLOTS; do
+        printf -v "$v" '%s' "$(theme_mix "${!v}" "$DARKEN")"
+    done
+    for v in $THEME_DEEPEN_SLOTS; do
+        printf -v "$v" '%s' "$(theme_mix "${!v}" "$DEEPEN")"
+    done
+    printf -v GLASS_HEX '%02x' $(( GLASS * 255 / 100 ))
+    printf -v GLASS_FRAC '0.%02d' "$GLASS"
     return 0
 }
 
