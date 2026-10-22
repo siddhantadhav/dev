@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+pkg_install docker docker-compose docker-buildx
+
+# socket activation: the daemon starts on first use instead of at boot
+sudo systemctl enable --now docker.socket
+
+# run docker without sudo — takes effect on next login (or `newgrp docker`)
+id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
