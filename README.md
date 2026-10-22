@@ -32,6 +32,26 @@ Installs git, clones this repo to `~/dev`, asks for a profile, runs everything.
 echo 'export DEV_PROFILE=work' > ~/.config/dev/env && ./run
 ```
 
+## Switching theme
+
+```sh
+./theme-switch                          # list themes + accents, show current
+./theme-switch catppuccin-latte blue    # theme [accent]
+./theme-switch --no-sudo rose-pine-moon # skip SDDM / folder colours / browsers
+```
+
+Recolours Hyprland, hyprlock, waybar, wofi, dunst, kitty, tmux, nvim, lazygit,
+GTK, Qt (Kvantum), cursor, icons, SDDM and Firefox/Chromium. Running apps reload
+live; GTK/Qt apps when reopened, browsers on restart.
+
+- `themes/<family>-<variant>.sh` — palette; `themes/_<family>.sh` maps it onto
+  the colour slots and names the family's GTK/Qt/cursor/... packages
+- `templates/` — rendered by `theme-apply` into `~/.config/dev/theme/`, which
+  the app configs include
+- `runs/arch/12-theme-pkgs` installs every theme's packages,
+  `13-theme-system` does the sudo parts, `runs/shared/97-theme` the rest
+- New family: a palette file per variant + a `_<family>.sh`
+
 ## Adding things
 
 - New tool for everyone: script in `runs/shared/`

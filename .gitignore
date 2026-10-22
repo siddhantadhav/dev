@@ -1,3 +1,4 @@
 *.swp
 *secret
 lazy-lock.json
+configs/arch/waybar/theme.css

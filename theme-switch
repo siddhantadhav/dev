@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# theme-switch — change the theme everywhere.
+# usage: ./theme-switch                       list themes + accents, show current
+#        ./theme-switch <theme> [accent]      e.g. catppuccin-latte blue
+#        ./theme-switch --no-sudo <theme>     skip SDDM / folder colours / browsers
+set -euo pipefail
+
+cd "$(dirname "$0")"
+export DEV_ROOT="$PWD"
+source ./lib.sh
+source ./themes/_lib.sh
+
+SUDO=1
+[[ "${1:-}" == --no-sudo ]] && { SUDO=""; shift; }
+
+if [[ -z "${1:-}" ]]; then
+    echo "current: ${DEV_THEME:-$DEV_THEME_DEFAULT} ${DEV_ACCENT:-(default accent)}"
+    for t in $(theme_list); do
+        ( . "$THEME_DIR/$t.sh"; printf '  %-22s %s (default %s)\n' "$t" "$ACCENTS" "$DEFAULT_ACCENT" )
+    done
+    exit 0
+fi
+
+theme="$1" accent="${2:-}"
+# keep the current accent across a flavor change when the new theme has it
+if [[ -z "$accent" && -n "${DEV_ACCENT:-}" ]] && (theme_load "$theme" "$DEV_ACCENT") 2>/dev/null; then
+    accent="$DEV_ACCENT"
+fi
+theme_load "$theme" ${accent:+"$accent"}   # validates both, exits on a bad name
+
+# edit only our lines; the env file also holds DEV_PROFILE
+env_file="$HOME/.config/dev/env"
+mkdir -p "$(dirname "$env_file")"
+touch "$env_file"
+grep -vE '^export DEV_(THEME|ACCENT)=' "$env_file" > "$env_file.tmp" || true
+mv "$env_file.tmp" "$env_file"
+printf 'export DEV_THEME=%s\nexport DEV_ACCENT=%s\n' "$theme" "$ACCENT" >> "$env_file"
+
+./run 97-theme
+[[ -n "$SUDO" ]] && ./run 13-theme-system
+exit 0

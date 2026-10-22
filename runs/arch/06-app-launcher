@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
 set -e
-command -v wofi >/dev/null 2>&1 && exit 0
-
-pkg_install wofi
-
+command -v wofi >/dev/null 2>&1 || pkg_install wofi
+# style.css is linked by theme-apply (themed)

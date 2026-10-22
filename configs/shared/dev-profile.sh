@@ -12,3 +12,6 @@ addPath "$HOME/.local/bin"
 addPath "$HOME/.local/scripts"
 addPath /usr/local/go/bin
 addPath "$HOME/go/bin"
+
+# lazygit: own settings + the colours rendered by ~/dev/theme-apply
+export LG_CONFIG_FILE="$HOME/.config/lazygit/config.yml,$HOME/.config/dev/theme/lazygit.yml"

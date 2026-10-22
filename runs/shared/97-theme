@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# render + apply the current theme (see theme-apply, ./theme-switch to change)
+set -e
+"$DEV_ROOT/theme-apply"

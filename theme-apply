@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# theme-apply — render templates/ for the current theme into ~/.config/dev/theme,
+# point app configs at them and live-reload whatever is running. No sudo: the
+# system-wide parts (SDDM, folder colours, browsers) are runs/arch/13-theme-system.
+# Pick the theme with ./theme-switch; this just applies what ~/.config/dev/env says.
+set -euo pipefail
+
+cd "$(dirname "$0")"
+export DEV_ROOT="$PWD"
+source ./lib.sh
+source ./themes/_lib.sh
+
+theme_load "${DEV_THEME:-$DEV_THEME_DEFAULT}" ${DEV_ACCENT:+"$DEV_ACCENT"}
+log "theme: $FAMILY-$VARIANT ($MODE), accent $ACCENT"
+
+OUT="$HOME/.config/dev/theme"
+mkdir -p "$OUT"
+for t in templates/*; do
+    theme_render "$t" "$OUT/$(basename "$t")"
+done
+
+# like lib.sh's link(), but the source is a rendered file outside the repo
+link_rendered() {
+    local src="$OUT/$1" dst="$2"
+    [[ -L "$dst" && "$(readlink "$dst")" == "$src" ]] && return 0
+    mkdir -p "$(dirname "$dst")"
+    if [[ -e "$dst" && ! -L "$dst" ]]; then
+        mv "$dst" "$dst.bak.$(date +%Y%m%d%H%M%S)"
+        log "backed up $dst"
+    fi
+    ln -sfn "$src" "$dst"
+}
+
+# kitty, tmux, hyprland, hyprlock and nvim include the rendered files directly.
+# lazygit gets it via LG_CONFIG_FILE (configs/shared/dev-profile.sh), which
+# fails if any listed file is missing.
+mkdir -p "$HOME/.config/lazygit"
+touch "$HOME/.config/lazygit/config.yml"
+
+# --- Linux desktop -------------------------------------------------------------
+if [[ "$DEV_OS" != macos ]]; then
+    link_rendered dunstrc          "$HOME/.config/dunst/dunstrc"
+    link_rendered wofi.css         "$HOME/.config/wofi/style.css"
+    link_rendered gtk-settings.ini "$HOME/.config/gtk-3.0/settings.ini"
+    link_rendered gtk-settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+    link_rendered kvantum.kvconfig "$HOME/.config/Kvantum/kvantum.kvconfig"
+    # waybar's style.css is tracked and @imports this sibling (gitignored) link,
+    # which resolves whether waybar starts via ~/.config/waybar or reload.sh
+    link_rendered waybar.css       "$DEV_ROOT/configs/arch/waybar/theme.css"
+
+    # libadwaita (GTK4) ignores gtk-theme-name; it only takes a theme's CSS
+    # dropped into ~/.config/gtk-4.0
+    gtk4="/usr/share/themes/$GTK_THEME/gtk-4.0"
+    for f in gtk.css gtk-dark.css assets; do
+        dst="$HOME/.config/gtk-4.0/$f"
+        if [[ -e "$gtk4/$f" ]]; then
+            ln -sfn "$gtk4/$f" "$dst"
+        elif [[ -L "$dst" ]]; then
+            rm "$dst"
+        fi
+    done
+
+    if command -v gsettings >/dev/null 2>&1; then
+        gs() { gsettings set org.gnome.desktop.interface "$@"; }
+        gs color-scheme "prefer-$MODE"
+        gs gtk-theme    "$GTK_THEME"
+        gs icon-theme   "$ICON_THEME"
+        gs cursor-theme "$CURSOR_THEME"
+        gs cursor-size  24
+    fi
+fi
+
+# --- live reload ---------------------------------------------------------------
+# each is a no-op when the app isn't running (e.g. during a fresh ./run)
+if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]; then
+    hyprctl reload >/dev/null
+    hyprctl setcursor "$CURSOR_THEME" 24 >/dev/null || true   # theme not installed yet
+fi
+pkill -USR1 -x kitty  || true   # kitty: reload config
+pkill -USR2 -x waybar || true   # waybar: reload config + style
+if pgrep -x dunst >/dev/null; then dunstctl reload; fi
+if tmux has-session 2>/dev/null; then tmux source-file "$OUT/tmux.conf"; fi
+# nvim watches $OUT/nvim.lua itself (configs/shared/nvim/lua/siddhant/theme.lua)
+
+log "applied (GTK/Qt apps pick it up when reopened)"

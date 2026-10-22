@@ -1,3 +1,7 @@
+/* colours (@bg, @accent, …) come from the current ~/dev theme: theme.css is a
+   gitignored link to the file theme-apply renders */
+@import "theme.css";
+
 * {
   font-family: JetbrainsMono Nerd Font;
   font-size: 10px;
@@ -9,25 +13,25 @@
 
 #waybar {
   background: transparent;
-  color: #c6d0f5;
+  color: @fg;
   margin: 2px 2px;
 }
 
 #workspaces {
   border-radius: 5px;
   margin: 5px;
-  background: #101010;
+  background: @bg_dim;
   margin-left: 2px;
 }
 
 #workspaces button {
-  color: #babbf1;
+  color: @fg_dim;
   border-radius: 5px;
   padding: 0.4rem;
 }
 
 #workspaces button.active {
-  color: #99d1db;
+  color: @accent;
   border-radius: 5px;
 }
 
@@ -36,7 +40,7 @@ button {
 }
 
 #workspaces button:hover {
-  background: #1e1e1e;
+  background: @surface;
   border: 0px solid transparent;
 }
 
@@ -54,36 +58,36 @@ button {
 #custom-weather,
 #custom-uptime,
 #custom-docker {
-  background-color: #101010;
+  background-color: @bg_dim;
   padding: 0.5rem 1rem;
   margin: 5px 0;
 }
 
 #clock {
-  color: #8caaee;
+  color: @blue;
   border-radius: 5px;
 }
 
 #custom-weather {
-  color: #8caaee;
+  color: @blue;
   margin-left: 0.5rem;
   border-radius: 5px;
 }
 
 #battery {
-  color: #a6d189;
+  color: @green;
 }
 
 #battery.charging {
-  color: #a6d189;
+  color: @green;
 }
 
 #battery.warning:not(.charging) {
-  color: #e78284;
+  color: @red;
 }
 
 #backlight {
-  color: #e5c890;
+  color: @yellow;
 }
 
 #backlight,
@@ -92,65 +96,65 @@ button {
 }
 
 #pulseaudio {
-  color: #ea999c;
+  color: @orange;
   border-radius: 5px 0px 0px 5px;
 }
 
 #custom-docker {
-  color: #85c1dc;
+  color: @cyan;
 }
 
 #custom-music {
-  color: #ca9ee6;
+  color: @magenta;
   border-radius: 5px;
 }
 
 #custom-lock {
-  color: #babbf1;
+  color: @fg_dim;
 }
 
 #custom-power {
   margin-right: 1rem;
   border-radius: 0px 5px 5px 0px;
-  color: #e78284;
+  color: @red;
 }
 
 #custom-docker.docker {
-  color: #85c1dc;
+  color: @cyan;
 }
 
 #custom-docker.docker-none {
-  color: #737994;
+  color: @overlay;
 }
 
 #custom-docker.docker-error {
-  color: #e78284;
+  color: @red;
 }
 
 #custom-weather.clear {
-  color: #e5c890; /* Sunny yellow */
+  color: @yellow;
 }
 
 #custom-weather.cloud {
-  color: #99d1db; /* Light blue */
+  color: @cyan;
 }
 
 #custom-weather.rain {
-  color: #8caaee; /* Blue */
+  color: @blue;
 }
 
 #custom-weather.snow {
-  color: #c6d0f5; /* White-ish */
+  color: @fg;
 }
 
 #custom-weather.thunder {
-  color: #ca9ee6; /* Purple */
+  color: @magenta;
 }
 
 #custom-weather.fog {
-  color: #b0b4bc; /* Gray */
+  color: @fg_dim;
 }
 
 #custom-weather.error {
-  color: #e78284; /* Red */
+  color: @red;
 }
