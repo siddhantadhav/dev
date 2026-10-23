@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-pkg_install docker docker-compose docker-buildx
+pkg_install docker docker-compose docker-buildx lazydocker
 
 # socket activation: the daemon starts on first use instead of at boot
 sudo systemctl enable --now docker.socket

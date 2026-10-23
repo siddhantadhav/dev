@@ -9,4 +9,6 @@ for t in $(theme_list); do
     # shellcheck disable=SC2207
     pkgs+=( $(theme_load "$t" >/dev/null && echo "$PACKAGES") )
 done
-yay -S --needed --noconfirm "${pkgs[@]}"
+# --sudoloop: building all of these outlasts sudo's 5 min timeout, and the
+# install step at the end would otherwise stop at a password prompt
+yay -S --needed --noconfirm --sudoloop "${pkgs[@]}"
