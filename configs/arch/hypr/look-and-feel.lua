@@ -3,18 +3,29 @@ local theme = dofile(os.getenv("HOME") .. "/.config/hypr/theme.lua")
 
 hl.config({
     general = {
+        -- waybar's margins (12) line up with gaps_out
         gaps_in  = 5,
-        gaps_out = 20,
+        gaps_out = 12,
 
         border_size = 2,
 
+        -- colours from the theme: gradient accent → blue on the focused window
         col = {
             active_border   = theme.active_border,
             inactive_border = theme.inactive_border,
         },
 
-        -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
-        resize_on_border = false,
+        -- drag a window's border or the gap next to it to resize
+        resize_on_border        = true,
+        extend_border_grab_area = 12,
+
+        -- floating windows snap to each other and to the screen edges
+        snap = {
+            enabled      = true,
+            window_gap   = 10,
+            monitor_gap  = 12,
+            respect_gaps = true,
+        },
 
         -- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
         allow_tearing = false,
@@ -23,8 +34,9 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 10,
-        rounding_power = 2,
+        -- between a circle (2) and a squircle (4): softer, more modern corners
+        rounding       = 12,
+        rounding_power = 3,
 
         -- Glass: every window slightly see-through (~/dev/themes/_style.sh);
         -- fullscreen stays solid, kitty/media are exempt in window-rules.lua
@@ -32,11 +44,14 @@ hl.config({
         inactive_opacity   = theme.inactive_opacity,
         fullscreen_opacity = 1.0,
 
+        -- wide, soft and dropped a little: depth without a dark halo
         shadow = {
-            enabled      = true,
-            range        = 4,
-            render_power = 3,
-            color        = theme.shadow,
+            enabled        = true,
+            range          = 20,
+            render_power   = 3,
+            offset         = { 0, 4 },
+            color          = theme.shadow,
+            color_inactive = theme.shadow_inactive,
         },
 
         -- heavy + dimmed so the wallpaper's neon reads as soft colour, not
@@ -51,6 +66,9 @@ hl.config({
             vibrancy   = 0.17,
             popups     = true,
         },
+
+        -- the rest of the screen dims behind the scratchpad (special workspace)
+        dim_special = 0.3,
     },
 
     animations = {
@@ -58,30 +76,21 @@ hl.config({
     },
 })
 
--- Default curves and animations, see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
-hl.curve("easeOutQuint",   { type = "bezier", points = { {0.23, 1},    {0.32, 1}    } })
-hl.curve("easeInOutCubic", { type = "bezier", points = { {0.65, 0.05}, {0.36, 1}    } })
-hl.curve("linear",         { type = "bezier", points = { {0, 0},       {1, 1}       } })
-hl.curve("almostLinear",   { type = "bezier", points = { {0.5, 0.5},   {0.75, 1}    } })
-hl.curve("quick",          { type = "bezier", points = { {0.15, 0},    {0.1, 1}     } })
+-- Animations: short and decelerating, so things land fast and settle softly.
+-- speed is in tenths of a second. See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
+hl.curve("snappy",   { type = "bezier", points = { {0.05, 0.9}, {0.1, 1}    } })  -- fast start, soft landing
+hl.curve("overshot", { type = "bezier", points = { {0.05, 0.9}, {0.1, 1.05} } })  -- same, with a hint of bounce
+hl.curve("linear",   { type = "bezier", points = { {0, 0},      {1, 1}      } })
 
--- Default springs
-hl.curve("easy",           { type = "spring", mass = 1, stiffness = 71.2633, dampening = 15.8273644 })
-
-hl.animation({ leaf = "global",        enabled = true,  speed = 10,   bezier = "default" })
-hl.animation({ leaf = "border",        enabled = true,  speed = 5.39, bezier = "easeOutQuint" })
-hl.animation({ leaf = "windows",       enabled = true,  speed = 4.79, spring = "easy" })
-hl.animation({ leaf = "windowsIn",     enabled = true,  speed = 4.1,  spring = "easy",         style = "popin 87%" })
-hl.animation({ leaf = "windowsOut",    enabled = true,  speed = 1.49, bezier = "linear",       style = "popin 87%" })
-hl.animation({ leaf = "fadeIn",        enabled = true,  speed = 1.73, bezier = "almostLinear" })
-hl.animation({ leaf = "fadeOut",       enabled = true,  speed = 1.46, bezier = "almostLinear" })
-hl.animation({ leaf = "fade",          enabled = true,  speed = 3.03, bezier = "quick" })
-hl.animation({ leaf = "layers",        enabled = true,  speed = 3.81, bezier = "easeOutQuint" })
-hl.animation({ leaf = "layersIn",      enabled = true,  speed = 4,    bezier = "easeOutQuint", style = "fade" })
-hl.animation({ leaf = "layersOut",     enabled = true,  speed = 1.5,  bezier = "linear",       style = "fade" })
-hl.animation({ leaf = "fadeLayersIn",  enabled = true,  speed = 1.79, bezier = "almostLinear" })
-hl.animation({ leaf = "fadeLayersOut", enabled = true,  speed = 1.39, bezier = "almostLinear" })
-hl.animation({ leaf = "workspaces",    enabled = true,  speed = 1.94, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "workspacesIn",  enabled = true,  speed = 1.21, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "workspacesOut", enabled = true,  speed = 1.94, bezier = "almostLinear", style = "fade" })
-hl.animation({ leaf = "zoomFactor",    enabled = true,  speed = 7,    bezier = "quick" })
+hl.animation({ leaf = "global",           enabled = true, speed = 3,   bezier = "snappy" })
+hl.animation({ leaf = "windowsIn",        enabled = true, speed = 3.5, bezier = "overshot", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut",       enabled = true, speed = 2.2, bezier = "snappy",   style = "popin 90%" })
+hl.animation({ leaf = "windowsMove",      enabled = true, speed = 3,   bezier = "snappy" })
+hl.animation({ leaf = "border",           enabled = true, speed = 4,   bezier = "snappy" })
+hl.animation({ leaf = "fade",             enabled = true, speed = 2.5, bezier = "snappy" })
+hl.animation({ leaf = "fadeOut",          enabled = true, speed = 2,   bezier = "snappy" })
+hl.animation({ leaf = "layersIn",         enabled = true, speed = 2.5, bezier = "snappy",   style = "fade" })
+hl.animation({ leaf = "layersOut",        enabled = true, speed = 1.8, bezier = "snappy",   style = "fade" })
+hl.animation({ leaf = "workspaces",       enabled = true, speed = 3,   bezier = "snappy",   style = "slidefade 15%" })
+hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 3,   bezier = "snappy",   style = "slidefadevert 20%" })
+hl.animation({ leaf = "zoomFactor",       enabled = true, speed = 3,   bezier = "snappy" })

@@ -16,7 +16,7 @@ THEME_SLOTS="bg bg_alt bg_dim surface surface_alt overlay fg fg_dim
     color8 color9 color10 color11 color12 color13 color14 color15"
 THEME_NAMES="MODE FAMILY VARIANT ACCENT GTK_THEME GTK_PREFER_DARK ICON_THEME
     CURSOR_THEME KVANTUM_THEME NVIM_COLORSCHEME
-    GLASS_HEX GLASS_FRAC TERM_OPACITY WIN_ACTIVE WIN_INACTIVE"
+    GLASS_HEX GLASS_FRAC BAR_GLASS_FRAC TERM_OPACITY WIN_ACTIVE WIN_INACTIVE"
 # slots that _style.sh pulls toward black: DARKEN for backgrounds, DEEPEN for
 # dim text and status colours (accent and terminal ANSI colours stay official)
 THEME_DARKEN_SLOTS="bg bg_alt bg_dim surface surface_alt"
@@ -70,6 +70,7 @@ theme_load() {
     done
     printf -v GLASS_HEX '%02x' $(( GLASS * 255 / 100 ))
     printf -v GLASS_FRAC '0.%02d' "$GLASS"
+    printf -v BAR_GLASS_FRAC '0.%02d' "$BAR_GLASS"
     return 0
 }
 

@@ -6,7 +6,8 @@ if ok then return theme end
 return {
     active_border   = "rgb(888888)",
     inactive_border = "rgb(444444)",
-    shadow          = 0xee1a1a1a,
+    shadow          = 0x661a1a1a,
+    shadow_inactive = 0x331a1a1a,
     cursor          = "Adwaita",
     active_opacity  = 1.0,
     inactive_opacity = 1.0,

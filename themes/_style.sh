@@ -9,7 +9,8 @@
 if [[ $MODE == dark ]]; then
     DARKEN=30           # % mix of the background slots toward black
     DEEPEN=0            # % mix of dim text + status colours toward black
-    GLASS=85            # % opacity of panels: waybar, wofi, dunst, hyprlock field
+    GLASS=85            # % opacity of panels: rofi, dunst, hyprlock field
+    BAR_GLASS=80        # % opacity of waybar's islands (text also gets a shadow)
     TERM_OPACITY=0.88   # kitty background only — its text stays solid
     WIN_ACTIVE=0.95     # Hyprland opacity of the focused window
     WIN_INACTIVE=0.88   #   … and of the others
@@ -20,6 +21,7 @@ else
     DARKEN=0
     DEEPEN=25
     GLASS=95
+    BAR_GLASS=95
     TERM_OPACITY=0.95
     WIN_ACTIVE=0.97
     WIN_INACTIVE=0.92
