@@ -5,7 +5,8 @@
 # with a command, opens it if it's a URL, else searches Google (scripts/web).
 # Typing = (first) turns it into a live calculator: the = key is bound to
 # kb-custom-2, which in rofi's modes means "switch to mode #2" (here calc);
-# Enter there copies the answer. Shift+← goes back.
+# Enter there copies the answer. Shift+Tab (or Shift+←) goes back to search;
+# the calculator says so until you type.
 #
 # Launcher-only flags live here, not in config.rasi, because config.rasi also
 # drives the dmenu menus (wifi password, power), where = must stay typeable.
@@ -25,6 +26,8 @@ exec rofi -show combi -modes "combi,calc" \
     -combi-modes "web:$bin/rofi-web input,drun,search:$bin/rofi-web row,clipboard:$bin/rofi-clipboard,files:$bin/rofi-files,ssh,emoji" \
     -combi-display-format "{text}" -display-combi "󰍉" -display-calc "=" \
     -kb-custom-2 "equal" \
+    -kb-mode-previous "ISO_Left_Tab,Shift+Left,Control+ISO_Left_Tab" -kb-element-prev "" \
     -calc-command "echo -n '{result}' | wl-copy" -no-history \
+    -hint-welcome "Shift+Tab: back to search" \
     -emoji-file "$emoji" -emoji-format "{emoji}  {name}" \
     -theme-str 'entry { placeholder: "search  ·  = to calculate"; }'

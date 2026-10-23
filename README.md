@@ -50,7 +50,8 @@ terminal, file manager, launcher and browser everything else uses.
 
 **Launcher** (rofi, `configs/arch/rofi/`): one fuzzy, case-insensitive list of
 apps, a Search Google row, clipboard history, files in `~`, ssh hosts and emoji.
-Typing `=` first turns it into a calculator (Enter copies the answer);
+Typing `=` first turns it into a calculator (Enter copies the answer,
+Shift+Tab goes back to search);
 Ctrl+Enter runs the typed text as a command, opens it as a URL, or searches it.
 
 **Bar** (waybar, `configs/arch/waybar/`) — every module is clickable; popups
