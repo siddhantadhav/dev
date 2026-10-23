@@ -19,11 +19,10 @@ color1=$red    color9=$red    color2=$green  color10=$green
 color3=$yellow color11=$yellow color4=$blue  color12=$blue
 color5=$pink   color13=$pink  color6=$teal   color14=$teal
 
-PACKAGES="catppuccin-gtk-theme-$VARIANT kvantum-theme-catppuccin-git catppuccin-cursors-$VARIANT
+PACKAGES="kvantum-theme-catppuccin-git catppuccin-cursors-$VARIANT
     papirus-folders-catppuccin-git catppuccin-sddm-theme-$VARIANT"
 
 theme_assets() {
-    GTK_THEME="catppuccin-$VARIANT-$ACCENT-standard+default"
     KVANTUM_THEME="catppuccin-$VARIANT-$ACCENT"
     CURSOR_THEME="catppuccin-$VARIANT-$ACCENT-cursors"   # ships hyprcursor too
     PAPIRUS_COLOR="cat-$VARIANT-$ACCENT"
@@ -37,4 +36,28 @@ theme_assets() {
         macchiato) CHROMIUM_THEME=cmpdlhmnmjhihmcfnigoememnffkimlk ;;
         mocha)     CHROMIUM_THEME=bkkmolkhemgaeaeggcmfbghljjjoofoh ;;
     esac
+    case "$ACCENT" in    # nearest of GNOME's accent colours (libadwaita)
+        rosewater|flamingo|pink) GNOME_ACCENT=pink ;;
+        mauve|lavender)          GNOME_ACCENT=purple ;;
+        red|maroon)              GNOME_ACCENT=red ;;
+        peach)                   GNOME_ACCENT=orange ;;
+        yellow)                  GNOME_ACCENT=yellow ;;
+        green)                   GNOME_ACCENT=green ;;
+        teal)                    GNOME_ACCENT=teal ;;
+        sky|sapphire|blue)       GNOME_ACCENT=blue ;;
+    esac
+}
+
+# the same files the AUR packages install, from the upstream releases
+theme_fetch() {
+    theme_fetch_archive "https://github.com/catppuccin/cursors/releases/download/v2.0.0/$CURSOR_THEME.zip" \
+        "$THEME_DATA/icons" "$CURSOR_THEME"
+    local kv="$HOME/.config/Kvantum/$KVANTUM_THEME" f
+    for f in kvconfig svg; do
+        [[ -f "$kv/$KVANTUM_THEME.$f" ]] && continue
+        curl -fsSL --retry 3 --retry-all-errors --create-dirs -o "$kv/$KVANTUM_THEME.$f" \
+            "https://raw.githubusercontent.com/catppuccin/kvantum/main/themes/$KVANTUM_THEME/$KVANTUM_THEME.$f" &&
+            log "theme: installed $kv/$KVANTUM_THEME.$f" ||
+            log "theme: could not download the Kvantum $f (the next run tries again)"
+    done
 }

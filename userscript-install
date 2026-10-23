@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # userscript-install — open the userscripts in configs/shared/userscripts in
-# Firefox, where Violentmonkey (force-installed by runs/arch/13-theme-system)
+# Firefox, where Violentmonkey (force-installed by runs/shared/13-theme-system)
 # shows each one's install page: click Install. Firefox never lets anything
 # install a userscript silently, so this one click is the manual step.
 # Violentmonkey only offers .user.js links served over http(s), so the folder

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+# config + image live in configs/hyprland/hypr (linked by 04-hyprland);
+# started from configs/hyprland/hypr/autostart.lua
+pkg_install hyprpaper

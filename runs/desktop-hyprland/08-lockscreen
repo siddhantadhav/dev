@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+
+pkg_install hyprlock

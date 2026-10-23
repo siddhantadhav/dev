@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -e
-# config + image live in configs/arch/hypr (linked by 04-hyprland);
-# started from configs/arch/hypr/autostart.lua
-command -v hyprpaper >/dev/null 2>&1 || pkg_install hyprpaper

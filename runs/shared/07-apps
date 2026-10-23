@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# the GUI apps every machine gets (names: see packages); the browser the
+# desktop opens is set in configs/hyprland/hypr/programs.lua
+set -e
+pkg_install kitty firefox chromium

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fedora prep: the repos packages names that Fedora itself doesn't ship.
+# COPRs (lazygit, hyprland, ...) are enabled by pkg_install when first needed.
+set -e
+pkg_install git curl unzip
+
+# Docker Engine (runs/shared/06-docker): docker-ce, as on docker.com, rather
+# than Fedora's moby-engine, which conflicts with it
+if [[ ! -f /etc/yum.repos.d/docker-ce.repo ]]; then
+    sudo dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
+fi

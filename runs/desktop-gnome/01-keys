@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# GNOME keys and mouse, as close to Hyprland's (README, "Desktop: Hyprland")
+# as GNOME allows. Super+Space opens the overview, whose search is the launcher:
+# rofi can't run here (Mutter has no layer-shell).
+set -e
+
+wm=org.gnome.desktop.wm.keybindings
+mk=org.gnome.settings-daemon.plugins.media-keys
+
+gsettings set $wm close "['<Super>q', '<Alt>F4']"
+gsettings set org.gnome.shell.keybindings toggle-overview "['<Super>space']"
+# Super+Space switched keyboard layouts
+gsettings set $wm switch-input-source "['XF86Keyboard']"
+gsettings set $wm switch-input-source-backward "['<Shift>XF86Keyboard']"
+# Alt+Tab between windows, Super+Tab between apps
+gsettings set $wm switch-windows "['<Alt>Tab']"
+gsettings set $wm switch-windows-backward "['<Shift><Alt>Tab']"
+gsettings set $wm switch-applications "['<Super>Tab']"
+gsettings set $wm switch-applications-backward "['<Shift><Super>Tab']"
+
+gsettings set $mk home "['<Super>e']"          # Files
+gsettings set $mk www "['<Super>b']"           # default browser (./run default-browser)
+gsettings set $mk screensaver "['<Super>l']"   # lock
+
+# Super+Return: kitty, as a custom shortcut (GNOME has no terminal key)
+path=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/dev-terminal/
+list="$(gsettings get $mk custom-keybindings)"
+if [[ "$list" != *"'$path'"* ]]; then
+    case "$list" in
+        "@as []"|"[]") list="['$path']" ;;
+        *)             list="${list%]}, '$path']" ;;
+    esac
+    gsettings set $mk custom-keybindings "$list"
+fi
+ck="$mk.custom-keybinding:$path"
+gsettings set "$ck" name 'Terminal'
+gsettings set "$ck" command 'kitty'
+gsettings set "$ck" binding '<Super>Return'
+
+# workspaces 1…10 on Super+1…0, Super+Shift moves the window there; GNOME's
+# own Super+number (launch the nth dock app) goes
+gsettings set org.gnome.mutter dynamic-workspaces false
+gsettings set org.gnome.desktop.wm.preferences num-workspaces 10
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    n=$(( i % 10 ))
+    gsettings set $wm switch-to-workspace-$i "['<Super>$n']"
+    gsettings set $wm move-to-workspace-$i "['<Super><Shift>$n']"
+    (( i < 10 )) && gsettings set org.gnome.shell.keybindings switch-to-application-$i "[]"
+done
+
+# Super+drag moves a window, Super+right-drag resizes it
+gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Super>'
+gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true

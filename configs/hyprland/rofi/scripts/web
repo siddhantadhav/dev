@@ -23,7 +23,8 @@ open_url() {
     local win
     win="$(hyprctl clients -j 2>/dev/null | python3 -c '
 import json, sys
-wins = [c for c in json.load(sys.stdin) if c["class"] == sys.argv[1]]
+cls = sys.argv[1]   # Fedora names it reverse-DNS: org.mozilla.firefox
+wins = [c for c in json.load(sys.stdin) if c["class"] in (cls, "org.mozilla." + cls) or c["class"].endswith("." + cls)]
 if wins:
     print(min(wins, key=lambda c: c["focusHistoryID"])["address"])' "${BROWSER_CLASS:-$BROWSER}")"
     setsid -f "$BROWSER" "$1" >/dev/null 2>&1

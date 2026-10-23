@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run — execute environment scripts for this OS + profile.
+# run — execute environment scripts for this OS + desktop + profile.
 # usage: ./run [--dry] [filter]
 #   ./run            run everything
 #   ./run zsh        only scripts whose path matches "zsh"
@@ -20,12 +20,13 @@ for arg in "$@"; do
     esac
 done
 
-log "os=$DEV_OS  profile=$DEV_PROFILE"
+log "os=$DEV_OS  desktop=$DEV_DESKTOP  profile=$DEV_PROFILE"
 
-# order: OS base first, then shared tools, then profile extras.
+# order: OS prep (package managers, repos) first, then the desktop, then the
+# apps and theme every machine shares, then profile extras.
 # within each dir, number prefixes (00-, 10-, ...) control order.
 shopt -s nullglob
-scripts=( "runs/$DEV_OS"/* runs/shared/* "runs/profile-$DEV_PROFILE"/* )
+scripts=( "runs/$DEV_OS"/* "runs/desktop-$DEV_DESKTOP"/* runs/shared/* "runs/profile-$DEV_PROFILE"/* )
 
 for s in "${scripts[@]}"; do
     [[ -f "$s" ]] || continue

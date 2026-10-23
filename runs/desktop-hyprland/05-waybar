@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# waybar and everything its modules / click targets call (configs/arch/waybar):
-#   nerd font            the icons
+# waybar and everything its modules / click targets call (configs/hyprland/waybar):
 #   python               scripts/calendar, weather, battery
 #   pavucontrol          right-click on volume
 #   btop                 click on cpu / memory
@@ -12,17 +11,15 @@ set -e
 #   cava                 the media module's equalizer bars (scripts/media)
 #   inotify-tools        reload.sh (live-reload while editing the bar)
 pkgs=(
-    waybar ttf-jetbrains-mono-nerd python
+    waybar python
     pavucontrol btop nm-connection-editor inotify-tools
     bluez bluez-utils bluetui cava
 )
-missing=()
-for p in "${pkgs[@]}"; do pacman -Qq "$p" >/dev/null 2>&1 || missing+=("$p"); done
-(( ${#missing[@]} )) && pkg_install "${missing[@]}"
+pkg_install "${pkgs[@]}"
 
 systemctl is-enabled --quiet bluetooth || sudo systemctl enable --now bluetooth
 
-link configs/arch/waybar "$HOME/.config/waybar"
+link configs/hyprland/waybar "$HOME/.config/waybar"
 
 # the network module (scripts/wifi-menu) replaces nm-applet's tray icon
-link configs/arch/autostart/nm-applet.desktop "$HOME/.config/autostart/nm-applet.desktop"
+link configs/hyprland/autostart/nm-applet.desktop "$HOME/.config/autostart/nm-applet.desktop"

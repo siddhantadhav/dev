@@ -4,16 +4,18 @@ set -eo pipefail
 # already installed? leave it alone.
 { command -v go >/dev/null 2>&1 || [[ -x /usr/local/go/bin/go ]]; } && exit 0
 
+# the same go.dev tarball on Linux and macOS (darwin)
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 case "$(uname -m)" in
-    x86_64)  arch=amd64 ;;
-    aarch64) arch=arm64 ;;
+    x86_64)        arch=amd64 ;;
+    aarch64|arm64) arch=arm64 ;;
     *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
 esac
 
 # ask go.dev for the latest version, e.g. "go1.26.4"
 version="$(curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors https://go.dev/VERSION?m=text | head -n1)"
 [[ -n "$version" ]] || { echo "could not fetch go version" >&2; exit 1; }
-tarball="${version}.linux-${arch}.tar.gz"
+tarball="${version}.${os}-${arch}.tar.gz"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT

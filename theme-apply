@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # theme-apply — render templates/ for the current theme into ~/.config/dev/theme,
 # point app configs at them and live-reload whatever is running. No sudo: the
-# system-wide parts (SDDM, folder colours, browsers) are runs/arch/13-theme-system.
+# system-wide parts (SDDM, folder colours, browsers) are runs/shared/13-theme-system.
 # Pick the theme with ./theme-switch; this just applies what ~/.config/dev/env says.
 set -euo pipefail
 
@@ -45,18 +45,17 @@ if [[ "$DEV_OS" != macos ]]; then
     link_rendered kvantum.kvconfig "$HOME/.config/Kvantum/kvantum.kvconfig"
     # waybar's style.css is tracked and @imports this sibling (gitignored) link,
     # which resolves whether waybar starts via ~/.config/waybar or reload.sh
-    link_rendered waybar.css       "$DEV_ROOT/configs/arch/waybar/theme.css"
+    [[ "$DEV_DESKTOP" == hyprland ]] &&
+        link_rendered waybar.css   "$DEV_ROOT/configs/hyprland/waybar/theme.css"
 
-    # libadwaita (GTK4) ignores gtk-theme-name; it only takes a theme's CSS
-    # dropped into ~/.config/gtk-4.0
-    gtk4="/usr/share/themes/$GTK_THEME/gtk-4.0"
-    for f in gtk.css gtk-dark.css assets; do
-        dst="$HOME/.config/gtk-4.0/$f"
-        if [[ -e "$gtk4/$f" ]]; then
-            ln -sfn "$gtk4/$f" "$dst"
-        elif [[ -L "$dst" ]]; then
-            rm "$dst"
-        fi
+    # GTK is adw-gtk3 / libadwaita recoloured: libadwaita ignores gtk-theme-name
+    # and reads only ~/.config/gtk-4.0/gtk.css; adw-gtk3 takes the same colours
+    # from ~/.config/gtk-3.0/gtk.css
+    link_rendered gtk4.css "$HOME/.config/gtk-4.0/gtk.css"
+    link_rendered gtk3.css "$HOME/.config/gtk-3.0/gtk.css"
+    # links to a GTK theme's own files, from before
+    for f in gtk-dark.css assets; do
+        [[ -L "$HOME/.config/gtk-4.0/$f" ]] && rm "$HOME/.config/gtk-4.0/$f"
     done
 
     if command -v gsettings >/dev/null 2>&1; then
@@ -66,8 +65,56 @@ if [[ "$DEV_OS" != macos ]]; then
         gs icon-theme   "$ICON_THEME"
         gs cursor-theme "$CURSOR_THEME"
         gs cursor-size  24
+        # libadwaita's accent (buttons, toggles, selections); GNOME 47+
+        gs accent-color "$GNOME_ACCENT" 2>/dev/null || true
+    fi
+
+    # GNOME Shell (top bar, quick settings, notifications, overview, OSDs, lock
+    # screen): the installed shell's own stylesheet in the theme's colours, set
+    # through the User Themes extension (runs/desktop-gnome)
+    shell_schema=org.gnome.shell.extensions.user-theme
+    if [[ "$DEV_DESKTOP" == gnome ]] && gsettings list-keys "$shell_schema" >/dev/null 2>&1; then
+        shell_dir="$THEME_DATA/themes/$SHELL_THEME/gnome-shell"
+        mkdir -p "$shell_dir"
+        "$DEV_ROOT/themes/gnome-shell-recolor" "$OUT/colors.json" "$shell_dir/gnome-shell.css" "$BAR_GLASS_FRAC"
+        gsettings set "$shell_schema" name "$SHELL_THEME"
+        for d in "$THEME_DATA"/themes/dev-*; do
+            [[ "$d" == "$THEME_DATA/themes/$SHELL_THEME" ]] || rm -rf "$d"
+        done
+    fi
+
+    # Flatpak apps can't see ~/.config/gtk-{3,4}.0 or ~/.local/share/icons by
+    # default; GTK3 ones get adw-gtk3 itself from Flathub (runs/shared/12-theme-pkgs)
+    if command -v flatpak >/dev/null 2>&1; then
+        flatpak override --user \
+            --filesystem=xdg-config/gtk-3.0:ro --filesystem=xdg-config/gtk-4.0:ro \
+            --filesystem=xdg-data/themes:ro --filesystem=xdg-data/icons:ro \
+            --unset-env=GTK_THEME
     fi
 fi
+
+# Electron apps don't take GTK themes, only dark/light. Teams for Linux (the
+# package or the Flatpak, when installed) follows the system's when told to;
+# this sets just that key in its config.json.
+for teams in "$HOME/.config/teams-for-linux" \
+             "$HOME/.var/app/com.github.IsmaelMartinez.teams_for_linux/config/teams-for-linux"; do
+    [[ -d "$teams" ]] || continue
+    python3 - "$teams/config.json" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        config = json.load(f)
+except FileNotFoundError:
+    config = {}
+if config.get("appearance", {}).get("followSystemTheme") is not True:
+    config.setdefault("appearance", {})["followSystemTheme"] = True
+    with open(path + ".tmp", "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    os.replace(path + ".tmp", path)
+PY
+done
 
 # --- live reload ---------------------------------------------------------------
 # each is a no-op when the app isn't running (e.g. during a fresh ./run)

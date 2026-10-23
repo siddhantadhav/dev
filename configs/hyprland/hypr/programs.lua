@@ -8,6 +8,6 @@ return {
   browser      = "firefox",
   browserClass = "firefox",   -- its window class, so the search tab gets focus
   -- one list: apps, clipboard, files, ssh, emoji; "=" for a calculator
-  -- (configs/arch/rofi/scripts/launcher; ~/.local/bin isn't on Hyprland's PATH)
+  -- (configs/hyprland/rofi/scripts/launcher; ~/.local/bin isn't on Hyprland's PATH)
   menu         = os.getenv("HOME") .. "/.local/bin/rofi-launcher",
 }

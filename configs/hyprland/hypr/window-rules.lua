@@ -71,7 +71,7 @@ hl.layer_rule({
     ignore_alpha = 0.1,
 })
 
--- Waybar click popups (configs/arch/waybar/scripts/popup): floating kitty
+-- Waybar click popups (configs/hyprland/waybar/scripts/popup): floating kitty
 -- windows centred on screen. Calendar and weather are sized to their output
 -- at kitty's font size (calendar ≈ 68 columns, weather ≈ 104) so nothing wraps.
 hl.window_rule({

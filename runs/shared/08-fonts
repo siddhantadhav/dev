@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# JetBrains Mono Nerd Font: kitty, waybar and rofi use its icons. Arch and
+# macOS package it; Fedora doesn't, so it comes from the nerd-fonts release.
+set -e
+pkg_install nerd-font
+[[ "$DEV_OS" == fedora ]] || exit 0
+
+dir="$HOME/.local/share/fonts/JetBrainsMonoNerd"
+compgen -G "$dir/*.ttf" >/dev/null && exit 0
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+curl -fsSL --retry 3 --retry-all-errors https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz -o "$tmp/font.tar.xz"
+mkdir -p "$dir"
+tar -C "$dir" -xJf "$tmp/font.tar.xz" --wildcards '*.ttf'
+fc-cache -f "$dir" >/dev/null
+log "installed JetBrains Mono Nerd Font -> $dir"

@@ -7,9 +7,9 @@
 # calculator (rofi-calc).
 set -e
 pkg_install rofi rofi-calc rofi-emoji wtype cliphist wl-clipboard
-link configs/arch/rofi/config.rasi "$HOME/.config/rofi/config.rasi"
+link configs/hyprland/rofi/config.rasi "$HOME/.config/rofi/config.rasi"
 for s in launcher web clipboard files; do
-    link "configs/arch/rofi/scripts/$s" "$HOME/.local/bin/rofi-$s"
+    link "configs/hyprland/rofi/scripts/$s" "$HOME/.local/bin/rofi-$s"
 done
 # the theme it @imports is rendered by theme-apply
 
@@ -38,6 +38,4 @@ for f in config style.css; do
     [[ -L "$HOME/.config/wofi/$f" ]] && rm "$HOME/.config/wofi/$f"
 done
 rmdir "$HOME/.config/wofi" 2>/dev/null || true
-if pacman -Qq wofi >/dev/null 2>&1; then
-    sudo pacman -Rns --noconfirm wofi
-fi
+pkg_uninstall wofi

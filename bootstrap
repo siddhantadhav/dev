@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# bootstrap — take a bare Arch machine to the point where ./run can take over.
+# bootstrap — take a bare Arch, Fedora or macOS machine to the point where
+# ./run can take over.
 # usage: bash <(curl -sSL https://raw.githubusercontent.com/siddhantadhav/dev/main/bootstrap)
 set -e
 
@@ -7,7 +8,12 @@ REPO="https://github.com/siddhantadhav/dev"
 DEV_DIR="$HOME/dev"
 
 # --- minimal deps (git, sudo) ------------------------------------------------
-if command -v pacman >/dev/null 2>&1; then
+if [[ "$(uname -s)" == Darwin ]]; then
+    # git comes with the Xcode command line tools, which Homebrew installs too
+    if ! command -v brew >/dev/null 2>&1 && [[ ! -x /opt/homebrew/bin/brew && ! -x /usr/local/bin/brew ]]; then
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    fi
+elif command -v pacman >/dev/null 2>&1; then
     if [[ $EUID -eq 0 ]]; then
         pacman -Sy --needed --noconfirm git sudo
     else
@@ -20,7 +26,7 @@ elif command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y git
     fi
 else
-    echo "bootstrap: need pacman (Arch) or dnf (Fedora)" >&2
+    echo "bootstrap: need macOS, pacman (Arch) or dnf (Fedora)" >&2
     exit 1
 fi
 
@@ -29,11 +35,16 @@ if [[ ! -d "$DEV_DIR" ]]; then
     git clone "$REPO" "$DEV_DIR"
 fi
 
-# --- pick a profile on first run -------------------------------------------
+# --- pick a profile and desktop on first run ---------------------------------
 if [[ ! -f "$HOME/.config/dev/env" ]]; then
     read -rp "profile (personal/work) [personal]: " p
     mkdir -p "$HOME/.config/dev"
     echo "export DEV_PROFILE=${p:-personal}" > "$HOME/.config/dev/env"
+    if [[ "$(uname -s)" != Darwin ]]; then
+        d=$(command -v pacman >/dev/null 2>&1 && echo hyprland || echo gnome)
+        read -rp "desktop (hyprland/gnome/none) [$d]: " desktop
+        echo "export DEV_DESKTOP=${desktop:-$d}" >> "$HOME/.config/dev/env"
+    fi
 fi
 
 cd "$DEV_DIR" && ./run

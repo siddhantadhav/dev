@@ -8,6 +8,12 @@ addPath() {
     esac
 }
 
+# macOS: Homebrew (Apple Silicon or Intel prefix)
+for brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    [[ -x "$brew" ]] && { eval "$("$brew" shellenv)"; break; }
+done
+unset brew
+
 addPath "$HOME/.local/bin"
 addPath "$HOME/.local/scripts"
 addPath /usr/local/go/bin

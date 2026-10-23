@@ -36,6 +36,8 @@ grep -vE '^export DEV_(THEME|ACCENT)=' "$env_file" > "$env_file.tmp" || true
 mv "$env_file.tmp" "$env_file"
 printf 'export DEV_THEME=%s\nexport DEV_ACCENT=%s\n' "$theme" "$ACCENT" >> "$env_file"
 
+# Fedora fetches each theme's files when it's picked (Arch has them all already)
+[[ "$DEV_OS" == fedora ]] && ./run 12-theme-pkgs
 ./run 97-theme
 [[ -n "$SUDO" ]] && ./run 13-theme-system
 exit 0

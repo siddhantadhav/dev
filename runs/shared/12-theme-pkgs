@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# The files themes need (Kvantum, cursors, icons, SDDM, ...). GTK is adw-gtk3
+# for every theme, recoloured by theme-apply.
+#   Arch:   every theme's packages, from the AUR (yay, runs/arch/02-aur-helper),
+#           so ./theme-switch never has to install anything
+#   Fedora: none of them are packaged, so the current theme's files come from
+#           upstream into ~/.local/share (theme_fetch); ./theme-switch runs this
+#           again for the new theme
+#   macOS:  nothing; only the terminal apps are themed there
+set -e
+source "$DEV_ROOT/themes/_lib.sh"
+
+[[ "$DEV_OS" == macos ]] || pkg_install adw-gtk3
+# Flatpak GTK3 apps can't reach /usr/share/themes; they take adw-gtk3 from a
+# Flathub extension named after the gtk-theme setting
+if command -v flatpak >/dev/null 2>&1 && flatpak remotes --system | grep -q '^flathub'; then
+    for ext in org.gtk.Gtk3theme.adw-gtk3 org.gtk.Gtk3theme.adw-gtk3-dark; do
+        flatpak info "$ext" >/dev/null 2>&1 ||
+            sudo flatpak install --system --noninteractive -y flathub "$ext" ||
+            log "theme: could not install $ext from Flathub (the next run tries again)"
+    done
+fi
+
+case "$DEV_OS" in
+    arch)
+        pkgs=( papirus-icon-theme )
+        for t in $(theme_list); do
+            # shellcheck disable=SC2207
+            pkgs+=( $(theme_load "$t" >/dev/null && echo "$PACKAGES") )
+        done
+        # --sudoloop: building all of these outlasts sudo's 5 min timeout, and the
+        # install step at the end would otherwise stop at a password prompt
+        yay -S --needed --noconfirm --sudoloop "${pkgs[@]}"
+        ;;
+    fedora)
+        pkg_install papirus-icon-theme
+        theme_load "${DEV_THEME:-$DEV_THEME_DEFAULT}" ${DEV_ACCENT:+"$DEV_ACCENT"}
+        theme_fetch
+        ;;
+esac

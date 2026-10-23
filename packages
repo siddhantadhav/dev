@@ -1,0 +1,90 @@
+# packages — every app once, with its package on each OS. Scripts install by
+# the first column (pkg_install in lib.sh), so the same list works everywhere.
+#
+#   a,b                     several packages
+#   aur:pkg                 Arch User Repository (yay, runs/arch/02-aur-helper)
+#   copr:owner/project:pkg  Fedora COPR, enabled on first use
+#   cask:pkg                Homebrew cask (GUI app)
+#   github:owner/repo:asset release binary into ~/.local/bin ({arch} = uname -m)
+#   -                       not available on that OS: skipped with a log line
+#
+# Names not listed here are installed as-is on every OS.
+
+# name                  arch                        fedora                                  macos
+
+# --- base ------------------------------------------------------------------------------------------
+base-devel              base-devel                  -                                       -
+git                     git                         git                                     git
+curl                    curl                        curl                                    curl
+unzip                   unzip                       unzip                                   unzip
+python                  python                      python3                                 python
+gettext                 gettext                     gettext                                 gettext
+
+# --- terminal tools --------------------------------------------------------------------------------
+zsh                     zsh                         zsh                                     zsh
+neovim                  neovim                      neovim                                  neovim
+tree-sitter-cli         tree-sitter-cli             tree-sitter-cli                         tree-sitter-cli
+github-cli              github-cli                  gh                                      gh
+tmux                    tmux                        tmux                                    tmux
+lazygit                 lazygit                     copr:dejan/lazygit:lazygit              lazygit
+lazydocker              lazydocker                  copr:atim/lazydocker:lazydocker         lazydocker
+btop                    btop                        btop                                    btop
+
+# --- apps ------------------------------------------------------------------------------------------
+kitty                   kitty                       kitty                                   cask:kitty
+firefox                 firefox                     firefox                                 cask:firefox
+# Homebrew disabled its chromium cask (unsigned builds)
+chromium                chromium                    chromium                                -
+docker                  docker,docker-compose,docker-buildx docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin cask:docker-desktop
+# Fedora has no Nerd Font package: runs/shared/08-fonts downloads it
+nerd-font               ttf-jetbrains-mono-nerd     -                                       cask:font-jetbrains-mono-nerd-font
+
+# --- theme -----------------------------------------------------------------------------------------
+papirus-icon-theme      papirus-icon-theme          papirus-icon-theme                      -
+adw-gtk3                adw-gtk-theme               adw-gtk3-theme                          -
+kvantum                 kvantum                     kvantum                                 -
+kvantum-qt5             kvantum-qt5                 kvantum-qt5                             -
+gsettings-desktop-schemas gsettings-desktop-schemas gsettings-desktop-schemas               -
+xdg-desktop-portal-gtk  xdg-desktop-portal-gtk      xdg-desktop-portal-gtk                  -
+
+# --- desktop: hyprland -----------------------------------------------------------------------------
+hyprland                hyprland                    copr:sdegler/hyprland:hyprland          -
+hyprlock                hyprlock                    copr:sdegler/hyprland:hyprlock          -
+hyprpaper               hyprpaper                   copr:sdegler/hyprland:hyprpaper         -
+dunst                   dunst                       dunst                                   -
+libnotify               libnotify                   libnotify                               -
+pipewire                pipewire                    pipewire                                -
+pipewire-pulse          pipewire-pulse              pipewire-pulseaudio                     -
+wireplumber             wireplumber                 wireplumber                             -
+playerctl               playerctl                   playerctl                               -
+upower                  upower                      upower                                  -
+# Fedora uses tuned-ppd (same D-Bus API; conflicts with power-profiles-daemon)
+power-profiles-daemon   power-profiles-daemon       tuned-ppd                               -
+brightnessctl           brightnessctl               brightnessctl                           -
+waybar                  waybar                      waybar                                  -
+pavucontrol             pavucontrol                 pavucontrol                             -
+nm-connection-editor    nm-connection-editor        nm-connection-editor                    -
+inotify-tools           inotify-tools               inotify-tools                           -
+bluez                   bluez                       bluez                                   -
+# bluetoothctl: its own package on Arch, part of bluez on Fedora
+bluez-utils             bluez-utils                 bluez                                   -
+bluetui                 bluetui                     github:pythops/bluetui:bluetui-{arch}-linux-musl -
+cava                    cava                        cava                                    -
+rofi                    rofi                        rofi                                    -
+rofi-calc               rofi-calc                   copr:skoved/rofi-calc:rofi-calc         -
+rofi-emoji              rofi-emoji                  -                                       -
+wtype                   wtype                       wtype                                   -
+cliphist                cliphist                    cliphist                                -
+wl-clipboard            wl-clipboard                wl-clipboard                            -
+thunar                  thunar                      Thunar                                  -
+wpa_supplicant          wpa_supplicant              wpa_supplicant                          -
+networkmanager          networkmanager              NetworkManager                          -
+network-manager-applet  network-manager-applet      network-manager-applet                  -
+networkmanager-openvpn  networkmanager-openvpn      NetworkManager-openvpn-gnome            -
+iwd                     iwd                         iwd                                     -
+
+# --- desktop: gnome --------------------------------------------------------------------------------
+gnome-shell-extension-user-theme gnome-shell-extensions gnome-shell-extension-user-theme       -
+gnome-shell-extension-appindicator gnome-shell-extension-appindicator gnome-shell-extension-appindicator -
+gnome-shell-extension-just-perfection aur:gnome-shell-extension-just-perfection-desktop gnome-shell-extension-just-perfection -
+gnome-shell-extension-blur-my-shell aur:gnome-shell-extension-blur-my-shell gnome-shell-extension-blur-my-shell -
