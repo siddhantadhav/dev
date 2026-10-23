@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""battery — waybar's battery + power profile, as one module.
+
+  battery          JSON for waybar: icon = charge, icon colour = power profile
+                   (power-saver green · balanced plain · performance orange),
+                   percentage turns yellow/red when low
+  battery cycle    next profile: power-saver → balanced → performance
+"""
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+from tui import colours
+
+ORDER = ["power-saver", "balanced", "performance"]
+LEVELS = ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"]
+
+
+def run(*cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def profiles():
+    """(current, available) from power-profiles-daemon; ('', []) without it."""
+    out = run("powerprofilesctl", "list")
+    available = [line.strip(" *:") for line in out.splitlines() if line.rstrip().endswith(":")]
+    return run("powerprofilesctl", "get"), [p for p in ORDER if p in available]
+
+
+def cycle():
+    current, available = profiles()
+    if not available:
+        return
+    nxt = available[(available.index(current) + 1) % len(available)] if current in available else "balanced"
+    run("powerprofilesctl", "set", nxt)
+    run("pkill", "-RTMIN+8", "waybar")   # redraw now, not at the next interval
+
+
+def status():
+    bat = next(iter(sorted(Path("/sys/class/power_supply").glob("BAT*"))), None)
+    if bat is None:
+        print(json.dumps({"text": ""}))   # desktop: module hides itself
+        return
+    capacity = int((bat / "capacity").read_text())
+    state = (bat / "status").read_text().strip()     # Charging / Discharging / Full / Not charging
+    profile, _ = profiles()
+    c = colours()
+
+    if state == "Charging":
+        icon = "󰂄"
+    elif state in ("Full", "Not charging"):
+        icon = "󰚥"
+    else:
+        icon = LEVELS[min(capacity // 20, 4)]
+    tint = {"power-saver": c["green"], "performance": c["orange"]}.get(profile, c["fg"])
+
+    classes = [profile or "no-profile", state.lower().replace(" ", "-")]
+    if state == "Discharging":
+        classes += ["critical"] if capacity <= 12 else ["warning"] if capacity <= 25 else []
+
+    # "time to empty/full" only exists while (dis)charging
+    device = next((d for d in run("upower", "-e").splitlines() if "battery_BAT" in d), "")
+    info = run("upower", "-i", device) if device else ""
+    eta = next((line.split(":", 1)[1].strip() for line in info.splitlines() if "time to" in line), "")
+    tooltip = f"{state} · {capacity}%" + (f" · {eta}" if eta else "")
+    if profile:
+        tooltip += f"\nPower profile: {profile}\nclick: details · right click: change profile"
+
+    print(json.dumps({
+        "text": f"<span color='{tint}'>{icon}</span> {capacity}%",
+        "tooltip": tooltip,
+        "class": classes,
+        "percentage": capacity,
+    }, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    cycle() if sys.argv[1:] == ["cycle"] else status()

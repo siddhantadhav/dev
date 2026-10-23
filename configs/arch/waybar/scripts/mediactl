@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""mediactl — waybar media click: controls for what's playing. Everything
+on screen is clickable; the keys:
+
+  space        play / pause          n / p      next / previous track
+  ← →          seek 10 s             ↑ ↓        volume ±5 %
+  m            mute                  o          next output device
+  s / r        shuffle / repeat      tab        next player
+  q / Esc      close
+"""
+import subprocess
+
+import mediastate as ms
+from tui import BOLD, RESET, Screen, bg, colours, draw, fg, keys, width
+
+SEEK_W, VOL_W = 40, 24
+LOOPS = ["None", "Playlist", "Track"]
+LOOP_ICONS = {"None": "󰑗", "Playlist": "󰑖", "Track": "󰑘"}
+
+
+def run(*cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=3)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def player_opt(inst, prop):
+    """shuffle → "On"/"Off", loop → "None"/"Track"/"Playlist"; None if the
+    player doesn't support it."""
+    r = run("playerctl", "-p", inst, prop)
+    return r.stdout.strip() if r and r.returncode == 0 and r.stdout.strip() else None
+
+
+class Line:
+    """A line built from segments, remembering where the clickable ones are."""
+
+    def __init__(self):
+        self.text, self.col, self.spots = "", 0, []
+
+    def add(self, text, action=None):
+        if action:
+            self.spots.append((self.col, self.col + width(text), action))
+        self.text += text
+        self.col += width(text)
+        return self
+
+
+class Controls:
+    def __init__(self):
+        self.c = colours()
+        self.selected = None   # player instance the user picked with tab / click
+        # scripts/media's timing of the track, for players (Firefox) whose
+        # position is stale: see mediastate.TrackClock
+        self.clock = ms.TrackClock()
+        self.clock.load()
+
+    # --- actions ---------------------------------------------------------
+    def pc(self, *args):
+        if self.player:
+            run("playerctl", "-p", self.player["instance"], *args)
+
+    def seek_to(self, fraction):
+        if self.player and self.player["length"]:
+            self.pc("position", f"{fraction * self.player['length']:.1f}")
+
+    def volume_to(self, fraction):
+        run("wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{max(0.0, min(1.0, fraction)):.2f}")
+
+    def next_output(self):
+        if len(self.sinks) < 2:
+            return
+        names = [s["name"] for s in self.sinks]
+        current = next((i for i, s in enumerate(self.sinks) if s["default"]), -1)
+        target = names[(current + 1) % len(names)]
+        run("pactl", "set-default-sink", target)
+        # move what's already playing too, not just new streams
+        listing = run("pactl", "list", "short", "sink-inputs")
+        for row in (listing.stdout.splitlines() if listing else []):
+            run("pactl", "move-sink-input", row.split("\t")[0], target)
+
+    def next_player(self):
+        if self.players:
+            names = [p["instance"] for p in self.players]
+            i = names.index(self.player["instance"]) if self.player else -1
+            self.selected = names[(i + 1) % len(names)]
+
+    def cycle_loop(self):
+        if self.loop:
+            self.pc("loop", LOOPS[(LOOPS.index(self.loop) + 1) % len(LOOPS)])
+
+    # --- state + drawing -------------------------------------------------
+    def refresh(self):
+        self.players = ms.players()
+        self.clock.apply(self.players)
+        self.player = next((p for p in self.players if p["instance"] == self.selected), None) \
+            or ms.current(self.players)
+        self.sinks = ms.sinks()
+        self.sink = ms.default_sink(self.sinks)
+        inst = self.player["instance"] if self.player else None
+        self.shuffle = player_opt(inst, "shuffle") if inst else None
+        self.loop = player_opt(inst, "loop") if inst else None
+
+    def render(self):
+        c, lines = self.c, []
+        dim, text, accent, faint = fg(c["fg_dim"]), fg(c["fg"]), fg(c["accent"]), fg(c["overlay"])
+
+        if len(self.players) > 1:
+            tabs = Line()
+            for p in self.players:
+                label = f" {p['name']} "
+                style = bg(c["accent"]) + fg(c["bg"]) + BOLD if p is self.player else dim
+                tabs.add(style + label + RESET, lambda x, i=p["instance"]: setattr(self, "selected", i))
+                tabs.add(" ")
+            lines += [tabs, Line()]
+
+        p = self.player
+        if p:
+            state = "󰐊" if p["status"] == "Playing" else "󰏤"
+            lines.append(Line().add(text + BOLD + (p["title"] or "Unknown title")[:56] + RESET))
+            by = " — ".join(x for x in (p["artist"], p["album"]) if x)
+            lines.append(Line().add(dim + (by or p["name"])[:56] + RESET))
+            lines.append(Line())
+
+            pos = ("~" if p.get("estimated") else "") + ms.clock(p["position"])
+            seek = Line().add(dim + f"{pos:>7} " + RESET)
+            if p["length"]:
+                done = round(SEEK_W * min(1.0, (p["position"] or 0) / p["length"]))
+                bar = accent + "━" * done + "●" + faint + "─" * (SEEK_W - done) + RESET
+                seek.add(bar, lambda x: self.seek_to(x / SEEK_W))
+            else:
+                seek.add(faint + "─" * (SEEK_W + 1) + RESET)
+            lines.append(seek.add(dim + f" {ms.clock(p['length'])}" + RESET))
+            lines.append(Line())
+
+            buttons = Line().add(" " * 16)
+            buttons.add(text + "󰒮" + RESET, lambda x: self.pc("previous")).add("     ")
+            buttons.add(accent + BOLD + ("󰏤" if state == "󰐊" else "󰐊") + RESET,
+                        lambda x: self.pc("play-pause")).add("     ")
+            buttons.add(text + "󰒭" + RESET, lambda x: self.pc("next"))
+            if self.shuffle:
+                tone = accent if self.shuffle == "On" else faint
+                buttons.add("        ").add(tone + "󰒟" + RESET, lambda x: self.pc("shuffle", "toggle"))
+            if self.loop:
+                tone = accent if self.loop != "None" else faint
+                buttons.add("   ").add(tone + LOOP_ICONS.get(self.loop, "󰑖") + RESET, lambda x: self.cycle_loop())
+            lines.append(buttons)
+        else:
+            lines += [Line().add(dim + "Nothing playing" + RESET), Line()]
+        lines.append(Line())
+
+        s = self.sink
+        if s:
+            icon = "󰋋" if s["headphones"] else "󰓃"
+            lit = 0 if s["mute"] else round(VOL_W * min(100, s["volume"]) / 100)
+            vol = Line().add(text + ("󰝟" if s["mute"] else "󰕾") + "  " + RESET, lambda x: self.mute())
+            vol.add(accent + "▰" * lit + fg(c["surface"]) + "▰" * (VOL_W - lit) + RESET,
+                    lambda x: self.volume_to((x + 1) / VOL_W))
+            vol.add(dim + ("  muted" if s["mute"] else f"  {s['volume']}%") + RESET)
+            lines.append(vol)
+            out = Line().add(text + f"{icon}  {s['label']}" + RESET,
+                             (lambda x: self.next_output()) if len(self.sinks) > 1 else None)
+            if len(self.sinks) > 1:
+                out.add(faint + "   o: switch" + RESET)
+            lines.append(out)
+
+        hint = "space play · ←→ seek · ↑↓ volume · n/p track · o output · q close"
+        lines += [Line(), Line().add(faint + hint + RESET)]
+        return lines
+
+    def mute(self):
+        run("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
+
+    def handle(self, key, lines, top, lefts):
+        actions = {
+            " ": lambda: self.pc("play-pause"), "n": lambda: self.pc("next"),
+            "p": lambda: self.pc("previous"), "left": lambda: self.pc("position", "10-"),
+            "right": lambda: self.pc("position", "10+"), "s": lambda: self.pc("shuffle", "toggle"),
+            "r": self.cycle_loop, "m": self.mute, "o": self.next_output, "\t": self.next_player,
+            "up": lambda: run("wpctl", "set-volume", "-l", "1.0", "@DEFAULT_AUDIO_SINK@", "5%+"),
+            "down": lambda: run("wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"),
+        }
+        if key in actions:
+            actions[key]()
+        elif isinstance(key, tuple):
+            _, col, row = key
+            i = row - top
+            if 0 <= i < len(lines):
+                x = col - lefts[i]
+                for start, end, action in lines[i].spots:
+                    if start <= x < end:
+                        action(x - start)
+                        break
+
+
+def main():
+    ctl = Controls()
+    with Screen():
+        def show():
+            ctl.refresh()
+            lines = ctl.render()
+            return lines, *draw([line.text for line in lines], block=True)
+
+        lines, top, lefts = show()
+        for key in keys(timeout=1):   # "timeout" each second: redraw (position)
+            if key == "q":
+                return
+            if key != "timeout":
+                ctl.handle(key, lines, top, lefts)
+            lines, top, lefts = show()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# battery-info — waybar battery click: details as a notification.
+set -euo pipefail
+dev="$(upower -e | grep -m1 BAT)"
+info="$(upower -i "$dev" | grep -E 'state|percentage|time to|energy-rate|capacity' | sed 's/^ *//; s/  */ /g')"
+notify-send -a "Battery" "Battery  ·  $(powerprofilesctl get 2>/dev/null || echo) profile" "$info"

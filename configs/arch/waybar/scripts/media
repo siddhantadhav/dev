@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""media — waybar's media module (long-running, one JSON line per change).
+
+  sound playing   󰋋 ▃▆█▄▇▂   output icon (󰋋 headphones / 󰓃 speakers) + live
+                             equalizer bars from cava, for any app's sound
+  paused          󰋋          dimmed
+  nothing         (hidden)
+
+Hover: track, player, position, output device and volume. waybar re-sets a
+custom module's tooltip on every update, which restarts GTK's hover delay,
+so at 20 updates a second the tooltip would never show: while the pointer is
+on the bar (Hyprland's reserved space), the module holds still. Clicks are in
+the waybar config (click: scripts/mediactl).
+
+Woken by `playerctl --follow` (track / status), `pactl subscribe` (output
+device, volume) and cava frames. 10 frames a second, with a small gap
+between bars so each reads on its own (flush bars merge into one shape):
+about half the cost of 20 fps and still lively. cava sleeps after a second
+of silence, so a silent machine costs nothing.
+"""
+import ctypes
+import html
+import json
+import os
+import queue
+import signal
+import socket
+import subprocess
+import threading
+import time
+from pathlib import Path
+
+import mediastate as ms
+
+BARS = "▁▂▃▄▅▆▇█"   # cava levels 0–7
+GAP = 2048           # space between bars, in 1/1024 pt (pango letter_spacing)
+SILENCE = 1.0   # seconds of zero frames before the bars hide
+CAVA_CONF = Path.home() / ".cache/waybar-cava.conf"
+HYPR = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "hypr" / os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+CAVA = """\
+# written by ~/.config/waybar/scripts/media
+[general]
+bars = 6
+framerate = 10
+sleep_timer = 1
+
+[input]
+method = pipewire
+source = auto
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 7
+bar_delimiter = 59
+frame_delimiter = 10
+"""
+HINTS = "click: controls · right click: play/pause · scroll: next / previous"
+
+
+# children (playerctl, pactl, cava) get SIGTERM when this script exits,
+# however it exits, so a waybar reload never leaves them running
+_libc = ctypes.CDLL(None, use_errno=True)
+
+
+def die_with_parent():
+    _libc.prctl(1, signal.SIGTERM)   # PR_SET_PDEATHSIG
+
+
+def follow(cmd, events, tag, keep=lambda line: True):
+    """Each output line of cmd (restarted if it exits) → an event."""
+    while True:
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                                    preexec_fn=die_with_parent)
+        except OSError:   # not installed (yet): look again in a while
+            time.sleep(30)
+            continue
+        for line in proc.stdout:
+            if keep(line):
+                events.put((tag, line))
+        proc.wait()
+        time.sleep(2)
+
+
+def hypr(cmd):
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(str(HYPR / ".socket.sock"))
+        s.sendall(f"j/{cmd}".encode())
+        data = b""
+        while chunk := s.recv(65536):
+            data += chunk
+    return json.loads(data)
+
+
+class Hover:
+    """Whether the pointer is on the bar: inside the space Hyprland reserves
+    for it at the top or bottom of the pointer's monitor. Asks at most every
+    0.1 s (a query is ~0.05 ms)."""
+
+    def __init__(self):
+        self.at, self.over = 0.0, False
+
+    def __call__(self, now):
+        if now - self.at >= 0.1:
+            self.at, self.over = now, self._check()
+        return self.over
+
+    @staticmethod
+    def _check():
+        try:
+            c = hypr("cursorpos")
+            for m in hypr("monitors"):
+                w, h = m["width"] / m["scale"], m["height"] / m["scale"]
+                if m["x"] <= c["x"] < m["x"] + w and m["y"] <= c["y"] < m["y"] + h:
+                    _, top, _, bottom = m["reserved"]
+                    y = c["y"] - m["y"]
+                    return y < top or y >= h - bottom
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        return False
+
+
+def levels(line):
+    """'0;3;7;2;0;1;' → [0, 3, 7, 2, 0, 1]"""
+    return [int(v) for v in line.strip().split(";") if v.isdigit()]
+
+
+def bars(frame):
+    return f"<span letter_spacing='{GAP}'>" + "".join(BARS[min(v, 7)] for v in frame) + "</span>"
+
+
+def icon(sink):
+    return "󰋋" if sink and sink["headphones"] else "󰓃"
+
+
+def tooltip(player, sink):
+    """Built when the track, player or output changes, not every frame."""
+    lines = []
+    if player:
+        state = "󰐊" if player["status"] == "Playing" else "󰏤"
+        lines.append(f"<b>{html.escape(player['title'] or 'Unknown title')}</b>")
+        by = " — ".join(html.escape(x) for x in (player["artist"], player["album"]) if x)
+        if by:
+            lines.append(by)
+        # "~": our own estimate, the player's position is stale (TrackClock)
+        when = ("~" if player.get("estimated") else "") + ms.clock(player["position"])
+        if player["length"]:
+            when += f" / {ms.clock(player['length'])}"
+        when += "  ·  "
+        lines.append(f"{state} {when}{html.escape(player['name'])}")
+    else:
+        lines.append("Sound playing")
+    if sink:
+        volume = "muted" if sink["mute"] else f"{sink['volume']}%"
+        lines.append(f"{icon(sink)} {html.escape(sink['label'])}  ·  {volume}")
+    lines.append(HINTS)
+    return "\n".join(lines)
+
+
+def render(player, sink, frame, tip):
+    """frame: the bars to show ("" = silent); tip: tooltip(player, sink)."""
+    if player is None and not frame:
+        return {"text": ""}
+    playing = bool(frame) or (player is not None and player["status"] == "Playing")
+    return {"text": f"{icon(sink)} {frame}" if frame else icon(sink),
+            "class": "playing" if playing else "paused",
+            "tooltip": tip}
+
+
+def main():
+    events = queue.Queue()
+    CAVA_CONF.parent.mkdir(parents=True, exist_ok=True)
+    CAVA_CONF.write_text(CAVA)
+    for args in (
+        (["playerctl", "--all-players", "--follow", "metadata", "--format",
+          "{{playerInstance}} {{status}} {{title}}"], events, "player"),
+        (["pactl", "subscribe"], events, "sink", lambda l: " sink " in l or " server" in l),
+        (["cava", "-p", str(CAVA_CONF)], events, "frame"),
+    ):
+        threading.Thread(target=follow, args=args, daemon=True).start()
+
+    clock = ms.TrackClock()
+    clock.load()   # a bar reload mid-song keeps the timing it had
+
+    def read_player():
+        players = ms.players()
+        clock.apply(players)
+        clock.save()   # for scripts/mediactl
+        return ms.current(players)
+
+    player = read_player()
+    sink = ms.default_sink(ms.sinks())
+    tip = tooltip(player, sink)
+    frame, sound_at, read_at, last = "", 0.0, time.monotonic(), None
+    hovering = Hover()
+    while True:
+        try:
+            tag, line = events.get(timeout=0.5 if frame else 2)
+        except queue.Empty:
+            tag, line = None, ""
+        now = time.monotonic()
+
+        if tag == "frame":
+            values = levels(line)
+            if any(values):
+                frame, sound_at = bars(values), now
+            elif now - sound_at > SILENCE:
+                frame = ""
+        elif tag == "player":
+            player = read_player()
+            tip, read_at = tooltip(player, sink), now
+        elif tag == "sink":
+            sink = ms.default_sink(ms.sinks())
+            tip = tooltip(player, sink)
+        elif frame and now - sound_at > SILENCE:
+            frame = ""   # cava went to sleep without a final zero frame
+
+        # keep the tooltip's position current while something plays
+        if player and player["status"] == "Playing" and now - read_at > 2:
+            player = read_player()
+            tip, read_at = tooltip(player, sink), now
+
+        out = json.dumps(render(player, sink, frame, tip), ensure_ascii=False)
+        if out != last and not hovering(now):
+            print(out, flush=True)
+            last = out
+
+
+if __name__ == "__main__":
+    main()

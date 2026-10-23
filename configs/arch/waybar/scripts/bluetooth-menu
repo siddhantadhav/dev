@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""bluetooth-menu — waybar Bluetooth click: a rofi list of paired devices
+(pick one to connect / disconnect), plus power and settings. Pairing new
+devices and everything else is in bluetui (right click, or "Pair a new
+device…"), which handles passkeys.
+"""
+import subprocess
+import time
+from pathlib import Path
+
+import btstate
+
+POPUP = str(Path(__file__).with_name("popup"))
+ON, OFF = "󰂯  Turn Bluetooth on", "󰂲  Turn Bluetooth off"
+PAIR, SETTINGS = "󰐕  Pair a new device…", "󰒓  Bluetooth settings"
+
+
+def run(*cmd, timeout=20):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def note(text):
+    subprocess.run(["notify-send", "-a", "Bluetooth", "Bluetooth", text])
+
+
+def rows(adapter, devices):
+    """(label, action) pairs for the menu; action is a callable or None."""
+    if adapter is None:
+        return [("No Bluetooth adapter found", None)]
+    if not adapter["powered"]:
+        return [(ON, power_on), (SETTINGS, settings)]
+    out = []
+    for d in devices:
+        if not d["paired"]:
+            continue
+        mark = "󰄬 " if d["connected"] else "  "
+        battery = f"  ·  {d['battery']}%" if d["battery"] is not None else ""
+        out.append((f"{mark}{d['icon']}  {d['name']}{battery}", lambda d=d: toggle(d)))
+    return out + [(PAIR, settings), (OFF, power_off), (SETTINGS, settings)]
+
+
+def power_on():
+    run("rfkill", "unblock", "bluetooth")
+    time.sleep(0.5)   # the adapter needs a moment after unblocking
+    note("Turned on" if run("bluetoothctl", "power", "on") else "Couldn't turn on")
+
+
+def power_off():
+    note("Turned off" if run("bluetoothctl", "power", "off") else "Couldn't turn off")
+
+
+def toggle(d):
+    if d["connected"]:
+        ok = run("bluetoothctl", "disconnect", d["address"])
+        note(f"Disconnected {d['name']}" if ok else f"Couldn't disconnect {d['name']}")
+    else:
+        ok = run("bluetoothctl", "connect", d["address"])
+        note(f"Connected to {d['name']}" if ok else f"Couldn't connect to {d['name']}")
+
+
+def settings():
+    subprocess.Popen([POPUP, "bluetooth", "bluetui"], start_new_session=True,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def main():
+    items = rows(*btstate.read())
+    choice = subprocess.run(
+        # -i: rofi's dmenu mode is case-sensitive unless told, whatever config.rasi says
+        ["rofi", "-dmenu", "-i", "-p", "bluetooth", "-theme-str", "window { width: 400px; }"],
+        input="\n".join(label for label, _ in items), capture_output=True, text=True).stdout.strip()
+    for label, action in items:
+        if label == choice and action:
+            action()
+
+
+if __name__ == "__main__":
+    main()

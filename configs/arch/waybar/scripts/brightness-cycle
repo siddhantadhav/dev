@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# brightness-cycle — waybar backlight click: step through 30% → 60% → 100%.
+set -euo pipefail
+now="$(brightnessctl -m | cut -d, -f4 | tr -d %)"
+if   (( now < 45 )); then next=60
+elif (( now < 80 )); then next=100
+else next=30
+fi
+brightnessctl -q set "$next%"

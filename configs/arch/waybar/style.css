@@ -1,165 +1,182 @@
-/* colours (@bg, @accent, @glass, …) come from the current ~/dev theme: theme.css
-   is a gitignored link to the file theme-apply renders. Panels are translucent
-   (@glass); Hyprland blurs behind them (layer rule in hypr/window-rules.lua). */
+/* colours (@fg, @accent, @glass, …) come from the current ~/dev theme: theme.css
+   is a gitignored link to the file theme-apply renders. Islands are translucent
+   (@glass, opacity set by BAR_GLASS in themes/_style.sh); Hyprland blurs behind
+   them (layer rule in hypr/window-rules.lua) and text carries a soft shadow, so
+   it stays readable over the bright parts of the wallpaper.
+   Colour is used for meaning only: accent = where you are, yellow/red = needs
+   attention. Everything else is @fg / @fg_dim. */
 @import "theme.css";
 
 * {
-  font-family: JetbrainsMono Nerd Font;
-  font-size: 12px;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 13px;
+  font-weight: 500;
   min-height: 0;
-  padding-right: 2px;
-  padding-left: 2px;
-  padding-bottom: 0px;
-}
-
-#waybar {
-  background: transparent;
-  color: @fg;
-  margin: 2px 2px;
-}
-
-#workspaces {
-  border-radius: 5px;
-  margin: 5px;
-  background: @glass;
-  border: 1px solid @glass_edge;
-  margin-left: 2px;
-}
-
-#workspaces button {
-  color: @fg_dim;
-  border-radius: 5px;
-  padding: 0.4rem;
-}
-
-#workspaces button.active {
-  color: @accent;
-  background: @accent_tint;
-  border-radius: 5px;
-}
-
-button {
-  background: transparent;
-}
-
-#workspaces button:hover {
-  background: @glass_hover;
-  border: 0px solid transparent;
-}
-
-#custom-music,
-#tray,
-#backlight,
-#clock,
-#battery,
-#pulseaudio,
-#network,
-#cpu,
-#memory,
-#custom-lock,
-#custom-power,
-#custom-weather,
-#custom-uptime,
-#custom-docker {
-  background-color: @glass;
-  border-top: 1px solid @glass_edge;
-  border-bottom: 1px solid @glass_edge;
-  padding: 0.5rem 1rem;
-  margin: 5px 0;
-}
-
-#clock {
-  color: @blue;
-  border-radius: 5px;
-}
-
-#custom-weather {
-  color: @blue;
-  margin-left: 0.5rem;
-  border-radius: 5px;
-}
-
-#battery {
-  color: @green;
-}
-
-#battery.charging {
-  color: @green;
-}
-
-#battery.warning:not(.charging) {
-  color: @red;
-}
-
-#backlight {
-  color: @yellow;
-}
-
-#backlight,
-#battery {
+  border: none;
   border-radius: 0;
 }
 
-#pulseaudio {
-  color: @orange;
-  border-radius: 5px 0px 0px 5px;
-}
-
-#custom-docker {
-  color: @cyan;
-}
-
-#custom-music {
-  color: @magenta;
-  border-radius: 5px;
-}
-
-#custom-lock {
-  color: @fg_dim;
-}
-
-#custom-power {
-  margin-right: 1rem;
-  border-radius: 0px 5px 5px 0px;
-  color: @red;
-}
-
-#custom-docker.docker {
-  color: @cyan;
-}
-
-#custom-docker.docker-none {
-  color: @overlay;
-}
-
-#custom-docker.docker-error {
-  color: @red;
-}
-
-#custom-weather.clear {
-  color: @yellow;
-}
-
-#custom-weather.cloud {
-  color: @cyan;
-}
-
-#custom-weather.rain {
-  color: @blue;
-}
-
-#custom-weather.snow {
+window#waybar {
+  background: transparent;
   color: @fg;
 }
 
-#custom-weather.thunder {
-  color: @magenta;
+window#waybar label {
+  text-shadow: 0 1px 3px alpha(@bg_dim, 0.9);
 }
 
-#custom-weather.fog {
+tooltip {
+  background: @bg;
+  border: 1px solid @accent;
+  border-radius: 12px;
+}
+
+tooltip label {
+  color: @fg;
+  padding: 4px 6px;
+  text-shadow: none;
+}
+
+/* --- islands --------------------------------------------------------------- */
+#workspaces,
+#datetime,
+#custom-media,
+#custom-system,
+#controls,
+#tray,
+#custom-power {
+  background: @glass;
+  border: 1px solid @glass_edge;
+  border-radius: 12px;
+  padding: 0 5px;
+}
+
+/* modules inside an island */
+#clock,
+#custom-weather,
+#backlight,
+#pulseaudio,
+#custom-bluetooth,
+#network,
+#custom-battery {
+  padding: 0 10px;
+  color: @fg;
+}
+
+/* --- workspaces ------------------------------------------------------------ */
+/* custom buttons fed by scripts/workspaces; each carries .ws + its state */
+#workspaces {
+  padding: 3px;
+}
+
+#workspaces .ws {
+  min-width: 26px;
+  padding: 0 4px;
+  margin: 0 1px;
+  border-radius: 8px;
+  color: @fg_dim;
+  transition: all 100ms ease-out;
+}
+
+#workspaces .ws.empty {
+  color: @overlay;
+}
+
+#workspaces .ws:hover {
+  background: @glass_hover;
+  color: @fg;
+}
+
+#workspaces .ws.visible {
+  color: @fg;
+  box-shadow: inset 0 -2px @overlay;
+}
+
+#workspaces .ws.active {
+  min-width: 40px;
+  background: @accent_tint;
+  color: @accent;
+  font-weight: 700;
+}
+
+#workspaces .ws.urgent {
+  color: @red;
+  background: alpha(@red, 0.18);
+}
+
+/* --- centre ------------------------------------------------------------------ */
+#clock {
+  font-weight: 700;
+}
+
+#custom-weather {
   color: @fg_dim;
 }
 
-#custom-weather.error {
+/* media: output icon + equalizer bars (scripts/media) */
+#custom-media {
+  padding: 0 13px;
+  color: @fg_dim;
+}
+
+#custom-media.playing {
+  color: @accent;
+}
+
+/* --- states: only things that need you get colour ------------------------- */
+/* battery: the icon's colour is the power profile (set by scripts/battery);
+   the percentage turns yellow/red when running low. The system module
+   colours its own values (scripts/system). */
+#custom-battery.warning {
+  color: @yellow;
+}
+
+#custom-battery.critical {
   color: @red;
+}
+
+#custom-system {
+  padding: 0 13px;
+}
+
+#pulseaudio.muted,
+#custom-bluetooth.off,
+#network.disconnected {
+  color: @overlay;
+}
+
+#custom-bluetooth.connected {
+  color: @accent;
+}
+
+/* --- tray / power ---------------------------------------------------------- */
+#tray {
+  padding: 0 11px;
+}
+
+#tray > .needs-attention {
+  background: alpha(@red, 0.25);
+  border-radius: 6px;
+}
+
+#custom-power {
+  padding: 0 14px 0 12px;
+  color: @red;
+}
+
+#custom-power:hover {
+  background: alpha(@red, 0.2);
+}
+
+/* everything is clickable: hover shows it */
+#clock:hover,
+#custom-weather:hover,
+#custom-media:hover,
+#custom-system:hover,
+#backlight:hover,
+#pulseaudio:hover,
+#custom-bluetooth:hover,
+#network:hover,
+#custom-battery:hover {
+  color: @accent;
 }

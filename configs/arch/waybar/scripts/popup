@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# popup <name> <command...> — waybar click target: toggle a floating kitty
+# running <command>. Clicking the module again closes it. Floating/size come
+# from the waybar-popup-* window rules in hypr/window-rules.lua.
+# The window closes when the command exits (q in every popup); it only stays
+# open on an error, so the message can be read.
+set -euo pipefail
+name="$1"; shift
+class="waybar-popup-$name"
+pkill -f -- "--class $class " && exit 0
+exec kitty --class "$class" -o window_padding_width=14 \
+    bash -c '"$@" || { echo; echo "  [exited with an error — press a key]"; read -rsn1; }' popup "$@"

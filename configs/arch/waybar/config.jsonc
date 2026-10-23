@@ -1,99 +1,143 @@
 {
   "layer": "top",
   "position": "top",
-  "modules-left": ["hyprland/workspaces"],
+  "height": 38,
+  // edges line up with Hyprland's gaps_out (hypr/look-and-feel.lua)
+  "margin-top": 8,
+  "margin-left": 12,
+  "margin-right": 12,
+  "spacing": 8,
 
-  "modules-center": ["clock", "custom/weather"],
+  // islands: [workspaces] ... [clock · weather] ... [media] [system] [controls] [tray] [power]
+  // every module does something on click; popups are floating kitty windows
+  // (scripts/popup) — click the module again to close them
+  "modules-left": ["group/workspaces", "custom/ws-watch"],
+  "modules-center": ["group/datetime"],
+  "modules-right": ["custom/media", "custom/system", "group/controls", "tray", "custom/power"],
 
-  "modules-right": [
-    "pulseaudio",
-    "custom/uptime",
-    "backlight",
-    "battery",
-    "network",
-    "cpu",
-    "memory",
-    "custom/docker",
-    "tray",
-    "custom/lock",
-    "custom/power"
-  ],
-
-  "hyprland/workspaces": {
-    "format": "{name}: {icon}",
-    "format-icons": {
-      "active": "",
-      "default": ""
-    }
+  "group/datetime": {
+    "orientation": "horizontal",
+    "modules": ["clock", "custom/weather"]
+  },
+  "group/workspaces": {
+    "orientation": "horizontal",
+    "modules": ["custom/ws1", "custom/ws2", "custom/ws3", "custom/ws4", "custom/ws5",
+                "custom/ws6", "custom/ws7", "custom/ws8", "custom/ws9"]
+  },
+  "group/controls": {
+    "orientation": "horizontal",
+    "modules": ["backlight", "pulseaudio", "custom/bluetooth", "network", "custom/battery"]
   },
 
-  "tray": {
-    "icon-size": 16,
-    "spacing": 10
+  // Workspaces: waybar's hyprland/workspaces clicks with the legacy
+  // "dispatch workspace N", which the Lua config rejects — so these are custom
+  // buttons that dispatch in Lua. scripts/workspaces explains the setup: its
+  // watcher writes each button's state, the buttons just cat it (a Python
+  // start per button would lag behind the switch).
+  // click: go there · scroll: previous / next
+  "custom/ws-watch": {
+    "exec": "$HOME/.config/waybar/scripts/workspaces watch",
+    "restart-interval": 2
   },
-
-  "custom/music": {
-    "format": "  {}",
-    "escape": true,
-    "interval": 5,
-    "tooltip": false,
-    "exec": "playerctl metadata --format='{{ artist }} - {{ title }}'",
-    "on-click": "playerctl play-pause",
-    "max-length": 50
+  "custom/ws1": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/1 2>/dev/null || echo '{\"text\": \"1\", \"class\": [\"ws\", \"empty\"]}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 1 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws2": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/2 2>/dev/null || echo '{\"text\": \"2\", \"class\": [\"ws\", \"empty\"]}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 2 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws3": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/3 2>/dev/null || echo '{\"text\": \"3\", \"class\": [\"ws\", \"empty\"]}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 3 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws4": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/4 2>/dev/null || echo '{\"text\": \"4\", \"class\": [\"ws\", \"empty\"]}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 4 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws5": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/5 2>/dev/null || echo '{\"text\": \"5\", \"class\": [\"ws\", \"empty\"]}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 5 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws6": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/6 2>/dev/null || echo '{\"text\": \"\"}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 6 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws7": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/7 2>/dev/null || echo '{\"text\": \"\"}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 7 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws8": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/8 2>/dev/null || echo '{\"text\": \"\"}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 8 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
+  },
+  "custom/ws9": {
+    "exec": "cat $XDG_RUNTIME_DIR/waybar-workspaces/9 2>/dev/null || echo '{\"text\": \"\"}'",
+    "return-type": "json",
+    "interval": "once",
+    "signal": 9,
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({ workspace = 9 })'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
   },
 
   "clock": {
-    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-    "format": "{:%d/%m/%Y - %H:%M:%S}",
-    "interval": 1
-  },
-
-  "network": {
-    "format-wifi": "󰤢 {bandwidthDownBits}",
-    "format-ethernet": "󰈀 {bandwidthDownBits}",
-    "format-disconnected": "󰤠 No Network",
-    "interval": 5,
-    "tooltip": false
-  },
-
-  "cpu": {
-    "interval": 1,
-    "format": "  {icon0}{icon1}{icon2}{icon3} {usage:>2}%",
-    "format-icons": ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
-  },
-
-  "memory": {
     "interval": 30,
-    "format": "  {used:0.1f}G/{total:0.1f}G"
-  },
-
-  "custom/uptime": {
-    "format": "{}",
-    "interval": 1600,
-    "exec": "sh -c '(uptime -p)'"
-  },
-
-  "pulseaudio": {
-    "format": "{icon} {volume}%",
-    "format-muted": "",
-    "format-icons": {
-      "default": ["", "", " "]
+    "format": "󰥔  {:%a %d %b   %H:%M}",
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "calendar": {
+      "mode": "month",
+      "on-scroll": 1,
+      "format": {
+        "today": "<b><u>{}</u></b>"
+      }
     },
-    "on-click": "pavucontrol"
-  },
-
-  "custom/power": {
-    "tooltip": false,
-    "on-click": "wlogout &",
-    "format": "⏻"
-  },
-
-  "custom/docker": {
-    "format": "{}",
-    "return-type": "json",
-    "interval": 10,
-    "exec": "$HOME/.config/waybar/scripts/docker-stats/docker-stats",
-    "tooltip": true
+    // click: calendar (← → / scroll: months, ↑ ↓: years) · hover: this month
+    "on-click": "$HOME/.config/waybar/scripts/popup calendar $HOME/.config/waybar/scripts/calendar",
+    "actions": {
+      "on-scroll-up": "shift_up",
+      "on-scroll-down": "shift_down"
+    }
   },
 
   "custom/weather": {
@@ -101,6 +145,106 @@
     "tooltip": true,
     "interval": 1800,
     "exec": "$HOME/.config/waybar/scripts/weather-stats/weather-stats",
-    "return-type": "json"
+    "return-type": "json",
+    // click: 7-day forecast (← → / scroll: days)
+    "on-click": "$HOME/.config/waybar/scripts/popup weather $HOME/.config/waybar/scripts/weather"
+  },
+
+  // Output icon (󰋋 headphones / 󰓃 speakers) + live equalizer bars while any
+  // sound plays (cava), dimmed when paused, hidden when nothing plays.
+  // Hover: track, position, output device. scripts/media explains the setup.
+  // click: controls (scripts/mediactl) · right click: play/pause
+  // scroll: previous / next track
+  "custom/media": {
+    "exec": "$HOME/.config/waybar/scripts/media",
+    "return-type": "json",
+    "restart-interval": 5,
+    "on-click": "$HOME/.config/waybar/scripts/popup media $HOME/.config/waybar/scripts/mediactl",
+    "on-click-right": "playerctl play-pause",
+    "on-scroll-up": "playerctl previous",
+    "on-scroll-down": "playerctl next"
+  },
+
+  // CPU · GPU · RAM · power (watts on battery only) — scripts/system.
+  // click: details window (temperature, VRAM, iGPU, battery, Docker; b → btop)
+  // right click: btop
+  "custom/system": {
+    "exec": "$HOME/.config/waybar/scripts/system",
+    "return-type": "json",
+    "restart-interval": 5,
+    "on-click": "$HOME/.config/waybar/scripts/popup sysinfo $HOME/.config/waybar/scripts/sysinfo",
+    "on-click-right": "$HOME/.config/waybar/scripts/popup monitor btop"
+  },
+
+  "backlight": {
+    "format": "{icon} {percent}%",
+    "format-icons": ["󰃞", "󰃟", "󰃠"],
+    // click: 30% → 60% → 100% · scroll: ±5%
+    "on-click": "$HOME/.config/waybar/scripts/brightness-cycle",
+    "on-scroll-up": "brightnessctl -e4 -n2 set 5%+",
+    "on-scroll-down": "brightnessctl -e4 -n2 set 5%-",
+    "tooltip": false
+  },
+
+  // click: mute · right click: mixer · scroll: volume
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟 muted",
+    "format-icons": { "headphone": "󰋋", "default": ["󰕿", "󰖀", "󰕾"] },
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "on-click-right": "pavucontrol",
+    "scroll-step": 5,
+    "tooltip-format": "{desc}"
+  },
+
+  // Icon follows the connection: 󰂲 off · 󰂯 on · the connected device's type
+  // (󰋋 󰌌 󰍽 󰏲 󰓃) with its battery. scripts/bluetooth.
+  // click: paired devices, power (scripts/bluetooth-menu)
+  // right click: Bluetooth settings — pairing, trust, rename (bluetui)
+  "custom/bluetooth": {
+    "exec": "$HOME/.config/waybar/scripts/bluetooth",
+    "return-type": "json",
+    "restart-interval": 5,
+    "on-click": "$HOME/.config/waybar/scripts/bluetooth-menu",
+    "on-click-right": "$HOME/.config/waybar/scripts/popup bluetooth bluetui"
+  },
+
+  // click: Wi-Fi picker · right click: connection editor
+  "network": {
+    "interval": 5,
+    "format-wifi": "{icon} {essid}",
+    "format-ethernet": "󰈀 wired",
+    "format-disconnected": "󰤮 offline",
+    "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+    "max-length": 22,
+    "tooltip-format": "{ifname}  {ipaddr}\n󰇚 {bandwidthDownBytes}   󰕒 {bandwidthUpBytes}",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)  {ipaddr}\n󰇚 {bandwidthDownBytes}   󰕒 {bandwidthUpBytes}",
+    "on-click": "$HOME/.config/waybar/scripts/wifi-menu",
+    "on-click-right": "nm-connection-editor"
+  },
+
+  // battery + power profile in one: icon = charge, icon colour = profile
+  // click: details · right click: next profile
+  "custom/battery": {
+    "exec": "$HOME/.config/waybar/scripts/battery",
+    "return-type": "json",
+    "interval": 30,
+    "signal": 8,
+    "on-click": "$HOME/.config/waybar/scripts/battery-info",
+    "on-click-right": "$HOME/.config/waybar/scripts/battery cycle"
+  },
+
+  "tray": {
+    "icon-size": 15,
+    "spacing": 10
+  },
+
+  // click: power menu · tooltip: uptime
+  "custom/power": {
+    "format": "⏻",
+    "exec": "printf '{\"tooltip\": \"%s\"}' \"$(uptime -p)\"",
+    "return-type": "json",
+    "interval": 300,
+    "on-click": "$HOME/.config/waybar/scripts/power-menu"
   }
 }

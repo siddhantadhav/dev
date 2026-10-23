@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""workspaces — clickable workspace buttons for waybar.
+
+waybar's built-in hyprland/workspaces switches by sending the legacy
+`dispatch workspace N`, which Hyprland's Lua config rejects — so clicks did
+nothing. Instead the bar has one custom/ws<N> module per workspace whose
+on-click runs the Lua dispatch, and this script feeds them:
+
+  workspaces watch   long-running (custom/ws-watch): listens to Hyprland's event
+                     socket, writes one JSON state file per button, then signals
+                     waybar (RTMIN+9) so the buttons re-read them with `cat` —
+                     a few ms, where a Python start per button lagged visibly
+                     behind the switch. Prints nothing, so its own module stays
+                     hidden.
+
+Buttons 1–5 always show; 6–9 only while they hold windows or are focused.
+"""
+import json
+import os
+import signal
+import socket
+from pathlib import Path
+
+ALWAYS, MAX = 5, 9
+STATE = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "waybar-workspaces"
+HYPR = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "hypr" / os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+# events that can change which buttons are active / occupied / urgent
+EVENTS = {"workspace", "workspacev2", "focusedmon", "focusedmonv2", "createworkspace",
+          "createworkspacev2", "destroyworkspace", "destroyworkspacev2", "moveworkspace",
+          "moveworkspacev2", "openwindow", "closewindow", "movewindow", "movewindowv2", "urgent"}
+
+
+def query(cmd):
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(str(HYPR / ".socket.sock"))
+        s.sendall(f"j/{cmd}".encode())
+        data = b""
+        while chunk := s.recv(65536):
+            data += chunk
+    return json.loads(data)
+
+
+def write_state(urgent):
+    workspaces = {w["id"]: w for w in query("workspaces")}
+    monitors = query("monitors")
+    focused = next((m["activeWorkspace"]["id"] for m in monitors if m["focused"]), None)
+    visible = {m["activeWorkspace"]["id"] for m in monitors}
+    urgent.discard(focused)
+
+    STATE.mkdir(parents=True, exist_ok=True)
+    for n in range(1, MAX + 1):
+        ws = workspaces.get(n)
+        occupied = bool(ws and ws["windows"])
+        if n == focused:
+            cls = "active"
+        elif n in urgent:
+            cls = "urgent"
+        elif n in visible:
+            cls = "visible"      # shown on another monitor
+        elif occupied:
+            cls = "occupied"
+        else:
+            cls = "empty"
+        show = n <= ALWAYS or occupied or n == focused
+        windows = ws["windows"] if ws else 0
+        state = {"text": str(n) if show else "", "class": ["ws", cls],
+                 "tooltip": f"workspace {n} · {windows} window{'s' * (windows != 1)}"}
+        tmp = STATE / f"{n}.tmp"
+        tmp.write_text(json.dumps(state))
+        tmp.replace(STATE / str(n))
+    signal_waybar()
+
+
+_waybar = []
+
+
+def signal_waybar():
+    """RTMIN+9 to waybar, straight from here (no pkill process per switch).
+    Its pid is looked up once, and again if it changed (bar restarted)."""
+    for attempt in range(2):
+        if not _waybar:
+            _waybar.extend(int(p.name) for p in Path("/proc").iterdir() if p.name.isdigit()
+                           and _is_waybar(p))
+        try:
+            for pid in _waybar:
+                os.kill(pid, signal.SIGRTMIN + 9)
+            return
+        except ProcessLookupError:
+            _waybar.clear()
+
+
+def _is_waybar(proc):
+    """The live bar, not its finished-but-unreaped children (state Z), which
+    keep the name."""
+    try:
+        stat = (proc / "stat").read_text()
+    except OSError:
+        return False
+    name, state = stat[stat.index("(") + 1:stat.rindex(")")], stat[stat.rindex(")") + 2]
+    return name == "waybar" and state != "Z"
+
+
+def watch():
+    urgent = set()
+    write_state(urgent)
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(str(HYPR / ".socket2.sock"))
+        buf = b""
+        while chunk := s.recv(4096):
+            buf += chunk
+            *lines, buf = buf.split(b"\n")
+            changed = False
+            for line in lines:
+                event, _, data = line.decode(errors="ignore").partition(">>")
+                if event == "urgent":
+                    # data is a window address; mark the workspace it is on
+                    addr = "0x" + data.removeprefix("0x")
+                    for c in query("clients"):
+                        if c["address"] == addr:
+                            urgent.add(c["workspace"]["id"])
+                changed |= event in EVENTS
+            if changed:
+                write_state(urgent)
+
+
+if __name__ == "__main__":
+    watch()

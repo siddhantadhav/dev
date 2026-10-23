@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""bluetooth — waybar's Bluetooth module (long-running, one JSON line per
+change). The icon follows the connection:
+
+  󰂲  off / blocked      󰂯  on, nothing connected
+  󰋋 󰌌 󰍽 󰏲 󰓃  the connected device's type, its battery, "+1" per extra device
+
+`gdbus monitor` on BlueZ wakes it on every connect / disconnect / power
+change; a 30 s re-read covers anything it misses.
+"""
+import ctypes
+import html
+import json
+import queue
+import signal
+import subprocess
+import threading
+
+import btstate
+
+HINTS = "click: devices · right click: Bluetooth settings"
+
+
+# the gdbus child gets SIGTERM when this script exits,
+# however it exits, so a waybar reload never leaves it running
+_libc = ctypes.CDLL(None, use_errno=True)
+
+
+def die_with_parent():
+    _libc.prctl(1, signal.SIGTERM)   # PR_SET_PDEATHSIG
+
+
+def render(adapter, devices):
+    if adapter is None:
+        return {"text": ""}   # no controller: module hides
+    if not adapter["powered"]:
+        blocked = adapter["state"] == "off-blocked"
+        return {"text": "󰂲", "class": "off",
+                "tooltip": f"Bluetooth off{' (blocked)' if blocked else ''}\n{HINTS}"}
+
+    connected = [d for d in devices if d["connected"]]
+    if not connected:
+        return {"text": "󰂯", "class": "on", "tooltip": f"Bluetooth on · nothing connected\n{HINTS}"}
+
+    first = connected[0]
+    text = first["icon"]
+    if first["battery"] is not None:
+        text += f" {first['battery']}%"
+    if len(connected) > 1:
+        text += f" +{len(connected) - 1}"
+    lines = [f"{d['icon']}  {html.escape(d['name'])}"
+             + (f"  ·  {d['battery']}%" if d["battery"] is not None else "") for d in connected]
+    return {"text": text, "class": "connected", "tooltip": "\n".join(lines + [HINTS])}
+
+
+def watch(events):
+    """Any BlueZ signal → an event. Restarts if gdbus exits."""
+    while True:
+        proc = subprocess.Popen(["gdbus", "monitor", "--system", "--dest", "org.bluez"],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                                preexec_fn=die_with_parent)
+        for _ in proc.stdout:
+            events.put(None)
+        proc.wait()
+        events.put(None)
+
+
+def main():
+    events = queue.Queue()
+    threading.Thread(target=watch, args=(events,), daemon=True).start()
+    last = None
+    while True:
+        out = json.dumps(render(*btstate.read()), ensure_ascii=False)
+        if out != last:
+            print(out, flush=True)
+            last = out
+        try:
+            events.get(timeout=30)
+            # a connect fires a burst of signals: settle, then read once
+            while True:
+                events.get(timeout=0.3)
+        except queue.Empty:
+            pass
+
+
+if __name__ == "__main__":
+    main()

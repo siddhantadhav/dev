@@ -2,3 +2,4 @@
 *secret
 lazy-lock.json
 configs/arch/waybar/theme.css
+__pycache__/

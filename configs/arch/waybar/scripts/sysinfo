@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""sysinfo — waybar system module click: everything the bar leaves out.
+
+CPU · NVIDIA GPU · Intel GPU · memory · power · Docker, refreshed every 2 s.
+
+  b         open btop here (q in btop comes back)
+  q / Esc   close
+"""
+import shutil
+import subprocess
+import time
+
+import sysstat
+from tui import BOLD, RESET, Screen, colours, draw, fg, keys
+
+BAR = 24
+
+
+def meter(pct, c, warn=70, crit=90):
+    pct = max(0.0, min(100.0, pct or 0.0))
+    lit = round(pct / 100 * BAR)
+    colour = c["red"] if pct >= crit else c["yellow"] if pct >= warn else c["accent"]
+    return fg(colour) + "▰" * lit + fg(c["surface"]) + "▰" * (BAR - lit) + RESET
+
+
+def row(name, bar, value, detail, c):
+    return (fg(c["fg_dim"]) + BOLD + f"{name:<8}" + RESET + bar + "  "
+            + fg(c["fg"]) + BOLD + f"{value:>10}" + RESET + "  "
+            + fg(c["fg_dim"]) + detail + RESET)
+
+
+def render(cpu, gpu, c):
+    usage = cpu.usage()
+    load = sysstat.load_avg()
+    temp = sysstat.cpu_temp()
+    lines = [fg(c["accent"]) + BOLD + "System" + RESET, ""]
+
+    lines.append(row("CPU", meter(usage, c), f"{usage:.0f}%",
+                     f"{sysstat.cpu_freq_ghz():.1f} GHz · load {load[0]:.2f} {load[1]:.2f} {load[2]:.2f}"
+                     + (f" · {temp:.0f}°C" if temp is not None else ""), c))
+
+    g = gpu.data
+    if g:
+        vram = 100 * (g["mem_used"] or 0) / (g["mem_total"] or 1)
+        lines.append(row("GPU", meter(g["util"], c), f"{g['util'] or 0:.0f}%",
+                         f"{g['name']} · {g['pstate']}" + (f" · {g['temp']:.0f}°C" if g["temp"] is not None else ""), c))
+        lines.append(row("VRAM", meter(vram, c, 80, 95), f"{g['mem_used'] or 0:.0f}/{g['mem_total'] or 0:.0f}M",
+                         "dedicated memory", c))
+    igpu = sysstat.intel_gpu()
+    if igpu:
+        now, top = igpu
+        lines.append(row("iGPU", meter(100 * now / top, c, 101, 101), f"{now} MHz",
+                         f"Intel clock (max {top}) — busy % needs root", c))
+
+    used, total, swap_used, swap_total = sysstat.memory()
+    lines.append(row("RAM", meter(100 * used / total, c, 75, 90), f"{used:.1f}/{total:.1f}G",
+                     f"swap {swap_used:.1f}/{swap_total:.1f}G", c))
+
+    bat = sysstat.battery()
+    if bat:
+        profile = sysstat.power_profile()
+        if bat["watts"] is not None:
+            lines.append(row("Power", meter(100 * bat["watts"] / 60, c, 40, 65), f"{bat['watts']:.1f} W",
+                             "whole laptop, from the battery", c))
+        else:
+            lines.append(row("Power", " " * BAR, "AC", "plugged in — draw is only measurable on battery", c))
+        lines.append(row("Battery", meter(bat["capacity"], c, 101, 101), f"{bat['capacity']}%",
+                         bat["status"].lower() + (f" · {profile} profile" if profile else ""), c))
+
+    containers = sysstat.docker_running()
+    if containers is not None:
+        names = ", ".join(containers[:4]) + (" …" if len(containers) > 4 else "")
+        lines.append(row("Docker", " " * BAR, f"{len(containers)} running", names or "no containers", c))
+
+    hint = "b btop · q close" if shutil.which("btop") else "q close"
+    lines += ["", fg(c["overlay"]) + hint + RESET]
+    return lines
+
+
+def main():
+    cpu, gpu = sysstat.Cpu(), sysstat.Nvidia(2000)
+    try:
+        screen = Screen()
+        with screen:
+            c = colours()
+            draw([fg(c["fg_dim"]) + "reading sensors…" + RESET])
+            time.sleep(0.6)   # a first CPU delta + nvidia-smi line
+            draw(render(cpu, gpu, c), block=True)
+            for key in keys(timeout=2):
+                if key == "q":
+                    return
+                if key == "b" and shutil.which("btop"):
+                    screen.__exit__()
+                    subprocess.run(["btop"])
+                    screen.__enter__()
+                draw(render(cpu, gpu, c), block=True)
+    finally:
+        gpu.close()
+
+
+if __name__ == "__main__":
+    main()

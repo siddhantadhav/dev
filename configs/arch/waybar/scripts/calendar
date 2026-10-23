@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""calendar — waybar clock click: three months around the one in focus.
+
+  ← → / scroll / click ‹ ›   previous / next month
+  ↑ ↓                        previous / next year
+  t                          back to today
+  q / Esc                    close
+"""
+import calendar
+import datetime as dt
+
+from tui import BOLD, RESET, Screen, bg, colours, draw, fg, keys, width
+
+GAP = "    "
+calendar.setfirstweekday(calendar.SUNDAY)
+
+
+def shift(year, month, by):
+    i = year * 12 + month - 1 + by
+    return i // 12, i % 12 + 1
+
+
+def month_block(year, month, c, today, focus):
+    """8 lines, 20 columns each: title, weekday header, up to 6 weeks."""
+    title = f"{calendar.month_name[month]} {year}"
+    head = fg(c["accent"]) + BOLD if focus else fg(c["fg_dim"])
+    lines = [head + title.center(20) + RESET,
+             fg(c["overlay"]) + "Su Mo Tu We Th Fr Sa" + RESET]
+    for week in calendar.monthcalendar(year, month):
+        cells = []
+        for i, day in enumerate(week):
+            if not day:
+                cells.append("  ")
+            elif (year, month, day) == (today.year, today.month, today.day):
+                cells.append(bg(c["accent"]) + fg(c["bg"]) + BOLD + f"{day:2}" + RESET)
+            else:
+                weekend = i in (0, 6)
+                tone = c["fg"] if focus and not weekend else c["fg_dim"] if focus else c["overlay"]
+                cells.append(fg(tone) + f"{day:2}" + RESET)
+        lines.append(" ".join(cells))
+    while len(lines) < 8:
+        lines.append(" " * 20)
+    return lines
+
+
+def render(year, month, c):
+    today = dt.date.today()
+    blocks = [month_block(*shift(year, month, by), c, today, focus=(by == 0))
+              for by in (-1, 0, 1)]
+    rows = [GAP.join(b[i] + " " * (20 - width(b[i])) for b in blocks) for i in range(8)]
+    total = width(rows[0])
+    arrows = fg(c["accent"]) + BOLD + "‹" + RESET + " " * (total - 2) + fg(c["accent"]) + BOLD + "›" + RESET
+    hint = fg(c["overlay"]) + "← → month · ↑ ↓ year · t today · q close" + RESET
+    return [arrows] + rows + ["", hint]
+
+
+def main():
+    today = dt.date.today()
+    year, month = today.year, today.month
+    with Screen():
+        c = colours()
+        top, lefts = draw(render(year, month, c))
+        for key in keys(timeout=1):
+            if key == "q":
+                return
+            if key in ("left", "wheel-up"):
+                year, month = shift(year, month, -1)
+            elif key in ("right", "wheel-down"):
+                year, month = shift(year, month, 1)
+            elif key == "up":
+                year -= 1
+            elif key == "down":
+                year += 1
+            elif key == "t":
+                year, month = today.year, today.month
+            elif isinstance(key, tuple):
+                _, col, row = key
+                # the ‹ › arrows sit on the first line, at its two ends
+                if row in (top, top + 1):
+                    if col <= lefts[0] + 2:
+                        year, month = shift(year, month, -1)
+                    elif col >= lefts[0] + width(render(year, month, c)[0]) - 3:
+                        year, month = shift(year, month, 1)
+            top, lefts = draw(render(year, month, c))
+
+
+if __name__ == "__main__":
+    main()

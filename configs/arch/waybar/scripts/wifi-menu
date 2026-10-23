@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# wifi-menu — waybar network click: pick a Wi-Fi network in rofi; nmcli does
+# the work. Replaces nm-applet's tray icon (disabled via ~/.config/autostart).
+set -euo pipefail
+
+# -i: rofi's dmenu mode is case-sensitive unless told, whatever config.rasi says
+menu() { rofi -dmenu -i -p "$1" -theme-str 'window { width: 400px; }'; }
+
+# one notification per attempt: "Connecting…" turns into the result
+note_id=""
+note() {
+    local args=(-a "Wi-Fi" -p)
+    [[ -n "$note_id" ]] && args+=(-r "$note_id")
+    note_id="$(notify-send "${args[@]}" "Wi-Fi" "$1")"
+}
+
+# ask_password <ssid> [error] — the network as a title, a password field, and
+# under it the keys (or, in red, why the last try failed). Prints the password.
+ask_password() {
+    local title="${1//\\/\\\\}" hint="Enter connect  ·  Esc cancel" colour="@fg-dim"
+    title="${title//\"/\\\"}"
+    [[ -n "${2:-}" ]] && { hint="$2"; colour="@red"; }
+    rofi -dmenu -password -p "󰌾" -mesg "$hint" -theme-str "
+        window { width: 460px; padding: 14px; }
+        mainbox { children: [ textbox-title, inputbar, message ]; spacing: 10px; }
+        textbox-title { content: \"󰤨  $title\"; expand: false; padding: 0 4px; text-color: @fg;
+                        font: \"JetBrainsMono Nerd Font Bold 12\"; }
+        prompt { text-color: @fg-dim; }
+        entry { placeholder: \"Password\"; }
+        message { background-color: transparent; padding: 0 4px; }
+        textbox { text-color: $colour; }" </dev/null
+}
+
+# connect_secured <ssid> [error] — ask for the password (up to 3 tries) and
+# connect. A failed try leaves no profile behind with the wrong password; a
+# saved profile whose password stopped working gets the new one.
+connect_secured() {
+    local ssid="$1" err="${2:-}" pw out saved=""
+    nmcli -t -f NAME connection show | grep -qxF -- "$ssid" && saved=1
+    for _ in 1 2 3; do
+        pw="$(ask_password "$ssid" "$err")" || return 0
+        [[ -z "$pw" ]] && { err="Enter the password"; continue; }
+        note "Connecting to $ssid…"
+        if [[ -n "$saved" ]]; then
+            nmcli connection modify id "$ssid" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$pw" &&
+                out="$(nmcli connection up id "$ssid" 2>&1)" && { note "Connected to $ssid"; return 0; }
+        else
+            out="$(nmcli device wifi connect "$ssid" password "$pw" 2>&1)" && { note "Connected to $ssid"; return 0; }
+            nmcli connection delete id "$ssid" >/dev/null 2>&1 || true
+        fi
+        case "$out" in
+            *[Ss]ecrets*|*[Pp]assword*|*psk*) err="Wrong password — try again" ;;
+            *)                                 err="Couldn't connect — try again" ;;
+        esac
+    done
+    note "Couldn't connect to $ssid"
+}
+
+if [[ "$(nmcli -t radio wifi)" == disabled ]]; then
+    choice="$(printf '%s\n' "󰖩  Turn Wi-Fi on" "󰒓  Network settings" | menu wifi)" || exit 0
+    case "$choice" in
+        *"Wi-Fi on")  nmcli radio wifi on && note "Turned on" ;;
+        *settings)    nm-connection-editor & ;;
+    esac
+    exit 0
+fi
+
+# The list opens from NetworkManager's cache (~40 ms; it rescans on its own
+# every couple of minutes) instead of waiting ~1.5 s for a fresh scan. A scan
+# starts in the background so the next open is current; "Scan for networks"
+# (or --scan) waits for one now. An empty cache also waits.
+rescan=no
+[[ "${1:-}" == --scan ]] && rescan=yes
+list() { nmcli -t --escape no -f IN-USE,SIGNAL,SECURITY,SSID dev wifi list --rescan "$1"; }
+networks="$(list "$rescan")"
+[[ -z "$networks" ]] && networks="$(list yes)"
+[[ "$rescan" == no ]] && { nmcli device wifi rescan >/dev/null 2>&1 & }
+
+# IN-USE:SIGNAL:SECURITY:SSID — SSID last so `read` keeps any ':' in it
+icons=(󰤯 󰤟 󰤢 󰤥 󰤨)
+lines=() ssids=() secure=()
+declare -A seen
+while IFS=: read -r inuse signal security ssid; do
+    [[ -z "$ssid" ]] && continue
+    [[ -n "${seen[$ssid]-}" ]] && continue   # one row per network (strongest AP first)
+    seen[$ssid]=1
+    mark="  "; [[ "$inuse" == "*" ]] && mark="󰄬 "
+    lock=""; [[ -n "$security" && "$security" != "--" ]] && lock="  󰌾"
+    row="$mark${icons[$(( signal * 4 / 100 ))]}  $ssid$lock"
+    if [[ "$inuse" == "*" ]]; then   # the connected network first, the rest by signal
+        lines=("$row" "${lines[@]}"); ssids=("$ssid" "${ssids[@]}"); secure=("$lock" "${secure[@]}")
+    else
+        lines+=("$row"); ssids+=("$ssid"); secure+=("$lock")
+    fi
+done <<< "$networks"
+
+choice="$(printf '%s\n' "${lines[@]}" "󰑐  Scan for networks" "󰖪  Turn Wi-Fi off" "󰒓  Network settings" |
+    menu "wifi")" || exit 0
+case "$choice" in
+    *"Scan for networks") exec "$0" --scan ;;
+    *"Wi-Fi off")  nmcli radio wifi off && note "Turned off"; exit 0 ;;
+    *settings)     nm-connection-editor & exit 0 ;;
+esac
+
+for i in "${!lines[@]}"; do
+    [[ "${lines[$i]}" == "$choice" ]] || continue
+    ssid="${ssids[$i]}"
+    if nmcli -t -f NAME connection show | grep -qxF -- "$ssid"; then
+        note "Connecting to $ssid…"
+        if nmcli connection up id "$ssid" >/dev/null 2>&1; then
+            note "Connected to $ssid"
+        elif [[ -n "${secure[$i]}" ]]; then
+            connect_secured "$ssid" "Saved password didn't work — enter it again"
+        else
+            note "Couldn't connect to $ssid"
+        fi
+    elif [[ -n "${secure[$i]}" ]]; then
+        connect_secured "$ssid"
+    else
+        nmcli device wifi connect "$ssid" >/dev/null && note "Connected to $ssid" || note "Couldn't connect to $ssid"
+    fi
+done
