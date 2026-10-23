@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# rofi-web — web search for the launcher (rofi script mode), in Hyprland's
+# browser ($BROWSER, set in hypr/programs.lua + environment.lua; xdg-open's
+# default without it). scripts/launcher lists it twice:
+#
+#   rofi-web row     the always-shown "Search Google" row, right after apps.
+#                    rofi tells a script which row was picked but not what was
+#                    typed, so on pick we wait for rofi to close and read the
+#                    query from its entry history, which it writes on exit.
+#   rofi-web input   lists nothing; it's first in combi-modes, where rofi sends
+#                    typed text on Ctrl+Enter. Runs it if it starts with a
+#                    command, opens it if it looks like a URL, else searches.
+history="${XDG_CACHE_HOME:-$HOME/.cache}/rofi-entry-history.txt"
+
+# A running browser puts the URL in a new tab of its most recently used
+# window, which may be on another workspace: note that window first, then
+# focus it so the tab is in front.
+open_url() {
+    if [[ -z "${BROWSER:-}" ]]; then
+        xdg-open "$1"
+        return
+    fi
+    local win
+    win="$(hyprctl clients -j 2>/dev/null | python3 -c '
+import json, sys
+wins = [c for c in json.load(sys.stdin) if c["class"] == sys.argv[1]]
+if wins:
+    print(min(wins, key=lambda c: c["focusHistoryID"])["address"])' "${BROWSER_CLASS:-$BROWSER}")"
+    setsid -f "$BROWSER" "$1" >/dev/null 2>&1
+    if [[ -n "$win" ]]; then
+        hyprctl dispatch "hl.dsp.focus({ window = 'address:$win' })" >/dev/null
+    fi
+}
+
+open_search() {   # empty query: Google's front page
+    local q
+    q="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote_plus(sys.argv[1]))' "$1")"
+    open_url "https://www.google.com/${q:+search?q=$q}"
+}
+
+case "${1:-}:${ROFI_RETV:-0}" in
+    row:0)
+        printf 'Search Google\0icon\x1fweb-browser\x1fpermanent\x1ftrue\n' ;;
+    row:1)
+        # rofi rewrites the history on exit (we aren't its direct child, so
+        # wait for the file, not the pid). It saves only non-empty queries,
+        # keeping the last 20: an unchanged file, or one that only lost its
+        # oldest line, means the box was empty.
+        before="$(cat "$history" 2>/dev/null)"
+        stamp="$(stat -c %.9Y "$history" 2>/dev/null)"
+        export -f open_url open_search
+        setsid -f bash -c '
+            for _ in {1..200}; do   # 10 s at most
+                [[ "$(stat -c %.9Y "$2" 2>/dev/null)" != "$3" ]] && break
+                sleep 0.05
+            done
+            after="$(cat "$2" 2>/dev/null)"
+            if [[ "$after" == "$1" || "$after" == "$(tail -n +2 <<< "$1")" ]]; then
+                open_search ""
+            else
+                open_search "$(tail -n 1 <<< "$after")"
+            fi' _ "$before" "$history" "$stamp" >/dev/null 2>&1 ;;
+    input:2)
+        text="$2"
+        if type -P -- "${text%% *}" >/dev/null; then
+            setsid -f sh -c "$text" >/dev/null 2>&1
+        elif [[ "$text" =~ ^(https?://)?[^[:space:]/]+\.[a-z]{2,}(/[^[:space:]]*)?$ ]]; then
+            [[ "$text" == http* ]] || text="https://$text"
+            open_url "$text"
+        else
+            export -f open_url open_search
+            setsid -f bash -c 'open_search "$1"' _ "$text" >/dev/null 2>&1
+        fi ;;
+esac

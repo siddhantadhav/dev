@@ -31,7 +31,7 @@ link_rendered() {
     ln -sfn "$src" "$dst"
 }
 
-# kitty, tmux, hyprland, hyprlock and nvim include the rendered files directly.
+# kitty, tmux, hyprland, hyprlock, rofi and nvim include the rendered files directly.
 # lazygit gets it via LG_CONFIG_FILE (configs/shared/dev-profile.sh), which
 # fails if any listed file is missing.
 mkdir -p "$HOME/.config/lazygit"
@@ -40,7 +40,6 @@ touch "$HOME/.config/lazygit/config.yml"
 # --- Linux desktop -------------------------------------------------------------
 if [[ "$DEV_OS" != macos ]]; then
     link_rendered dunstrc          "$HOME/.config/dunst/dunstrc"
-    link_rendered wofi.css         "$HOME/.config/wofi/style.css"
     link_rendered gtk-settings.ini "$HOME/.config/gtk-3.0/settings.ini"
     link_rendered gtk-settings.ini "$HOME/.config/gtk-4.0/settings.ini"
     link_rendered kvantum.kvconfig "$HOME/.config/Kvantum/kvantum.kvconfig"

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# rofi-clipboard — clipboard history rows for the launcher (rofi script mode).
+# History is kept by cliphist, fed by the wl-paste watchers in
+# hypr/autostart.lua. Each row carries its cliphist line in `info`, so picking
+# one hands it back as $ROFI_INFO and we copy that entry again.
+if [[ -n "${ROFI_INFO:-}" ]]; then
+    # wl-copy stays behind to serve the clipboard; detach it from rofi's pipe
+    printf '%s' "$ROFI_INFO" | cliphist decode | wl-copy >/dev/null 2>&1
+    exit 0
+fi
+
+cliphist list 2>/dev/null | while IFS=$'\t' read -r id preview; do
+    printf '%s\0icon\x1fedit-paste\x1finfo\x1f%s\t%s\n' "$preview" "$id" "$preview"
+done

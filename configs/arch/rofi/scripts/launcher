@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# rofi-launcher — Super+Space: one list for everything. Results come in this
+# order: apps, "Search Google" (always there), clipboard history, files, ssh
+# hosts, emoji. Ctrl+Enter acts on the typed text itself: runs it if it starts
+# with a command, opens it if it's a URL, else searches Google (scripts/web).
+# Typing = (first) turns it into a live calculator: the = key is bound to
+# kb-custom-2, which in rofi's modes means "switch to mode #2" (here calc);
+# Enter there copies the answer. Shift+← goes back.
+#
+# Launcher-only flags live here, not in config.rasi, because config.rasi also
+# drives the dmenu menus (wifi password, power), where = must stay typeable.
+set -euo pipefail
+
+bin="$HOME/.local/bin"
+
+# emoji without the 5 skin-tone copies of each, so they don't flood results
+emoji_all=/usr/share/rofi-emoji/all_emojis.txt
+emoji="${XDG_CACHE_HOME:-$HOME/.cache}/rofi-emoji.txt"
+if [[ -f "$emoji_all" && ! "$emoji" -nt "$emoji_all" ]]; then
+    mkdir -p "$(dirname "$emoji")"
+    grep -v 'skin tone' "$emoji_all" > "$emoji"
+fi
+
+exec rofi -show combi -modes "combi,calc" \
+    -combi-modes "web:$bin/rofi-web input,drun,search:$bin/rofi-web row,clipboard:$bin/rofi-clipboard,files:$bin/rofi-files,ssh,emoji" \
+    -combi-display-format "{text}" -display-combi "󰍉" -display-calc "=" \
+    -kb-custom-2 "equal" \
+    -calc-command "echo -n '{result}' | wl-copy" -no-history \
+    -emoji-file "$emoji" -emoji-format "{emoji}  {name}" \
+    -theme-str 'entry { placeholder: "search  ·  = to calculate"; }'

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# rofi-files — files and folders under ~ for the launcher (rofi script mode);
+# picking one opens it in its default app. Skips hidden paths and the Go
+# module/build caches (~/go, ~/pkg), which are thousands of files nobody opens.
+if [[ -n "${ROFI_INFO:-}" ]]; then
+    setsid -f xdg-open "$ROFI_INFO" >/dev/null 2>&1
+    exit 0
+fi
+
+cd "$HOME" || exit 0
+find . -mindepth 1 \( -name '.*' -o -path ./go -o -path ./pkg \) -prune \
+    -o \( -type d -printf 'folder\t%P\n' \) -o \( -type f -printf 'text-x-generic\t%P\n' \) 2>/dev/null |
+    while IFS=$'\t' read -r icon path; do
+        printf '~/%s\0icon\x1f%s\x1finfo\x1f%s\n' "$path" "$icon" "$HOME/$path"
+    done
