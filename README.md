@@ -32,6 +32,19 @@ Installs git, clones this repo to `~/dev`, asks for a profile, runs everything.
 echo 'export DEV_PROFILE=work' > ~/.config/dev/env && ./run
 ```
 
+## Firefox userscripts
+
+`configs/shared/userscripts/*.user.js` run in Firefox through Violentmonkey,
+which `runs/arch/13-theme-system` force-installs by policy. Firefox only
+installs a userscript after you click Install on it, so after the first `./run`:
+
+```sh
+./userscript-install                 # opens every script's install page
+```
+
+- `media-position` — keeps the song position that waybar's media module shows
+  exact; YouTube otherwise clears it on autoplay
+
 ## Switching theme
 
 ```sh
@@ -40,7 +53,7 @@ echo 'export DEV_PROFILE=work' > ~/.config/dev/env && ./run
 ./theme-switch --no-sudo rose-pine-moon # skip SDDM / folder colours / browsers
 ```
 
-Recolours Hyprland, hyprlock, waybar, wofi, dunst, kitty, tmux, nvim, lazygit,
+Recolours Hyprland, hyprlock, waybar, rofi, dunst, kitty, tmux, nvim, lazygit,
 GTK, Qt (Kvantum), cursor, icons, SDDM and Firefox/Chromium. Running apps reload
 live; GTK/Qt apps when reopened, browsers on restart.
 

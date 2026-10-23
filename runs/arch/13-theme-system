@@ -30,10 +30,16 @@ fi
 # Browsers, via enterprise policy. Force-installing is the only scriptable way
 # to set a theme; a theme without a browser port drops ours, so the browser
 # falls back to its default. Takes effect on the browser's next start.
+#
+# Firefox also always gets Violentmonkey (a userscript manager, from Mozilla's
+# add-on site) for configs/shared/userscripts: media-position keeps the song
+# position that waybar's media module shows exact. Install the scripts with
+# ./userscript-install. (This file owns policies.json, so it lives here.)
+VIOLENTMONKEY='"{aecec67f-0d10-4fa7-b7c7-609a2db280cf}": { "installation_mode": "force_installed", "install_url": "https://addons.mozilla.org/firefox/downloads/latest/violentmonkey/latest.xpi" }'
 if command -v firefox >/dev/null 2>&1; then
-    ext="{}"
-    [[ -n "$FIREFOX_THEME" ]] && ext="{ \"$FIREFOX_THEME\": { \"installation_mode\": \"force_installed\", \"install_url\": \"$FIREFOX_THEME_URL\" } }"
-    write_root /etc/firefox/policies/policies.json "{ \"policies\": { \"ExtensionSettings\": $ext } }"
+    ext="$VIOLENTMONKEY"
+    [[ -n "$FIREFOX_THEME" ]] && ext+=", \"$FIREFOX_THEME\": { \"installation_mode\": \"force_installed\", \"install_url\": \"$FIREFOX_THEME_URL\" }"
+    write_root /etc/firefox/policies/policies.json "{ \"policies\": { \"ExtensionSettings\": { $ext } } }"
 fi
 if command -v chromium >/dev/null 2>&1; then
     list="[]"

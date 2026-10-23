@@ -1,5 +1,10 @@
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
 local theme = dofile(os.getenv("HOME") .. "/.config/hypr/theme.lua")
+local programs = require("programs")
+
+-- the browser for Super+B and the rofi launcher's web searches (scripts/web)
+hl.env("BROWSER", programs.browser)
+hl.env("BROWSER_CLASS", programs.browserClass)
 
 hl.env("XCURSOR_THEME", theme.cursor)
 hl.env("HYPRCURSOR_THEME", theme.cursor)
