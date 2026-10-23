@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -eo pipefail
 
 # already installed? leave it alone.
 { command -v go >/dev/null 2>&1 || [[ -x /usr/local/go/bin/go ]]; } && exit 0
@@ -11,12 +11,13 @@ case "$(uname -m)" in
 esac
 
 # ask go.dev for the latest version, e.g. "go1.26.4"
-version="$(curl -fsSL https://go.dev/VERSION?m=text | head -n1)"
+version="$(curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors https://go.dev/VERSION?m=text | head -n1)"
+[[ -n "$version" ]] || { echo "could not fetch go version" >&2; exit 1; }
 tarball="${version}.linux-${arch}.tar.gz"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-curl -fsSL "https://go.dev/dl/${tarball}" -o "$tmp/$tarball"GI
+curl -fsSL "https://go.dev/dl/${tarball}" --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/$tarball"
 sudo rm -rf /usr/local/go
 sudo tar -C /usr/local -xzf "$tmp/$tarball"

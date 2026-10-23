@@ -2,4 +2,3 @@
 set -e
 
 command -v hyprlock >/dev/null 2>&1 || pkg_install hyprlock
-pkg_install hyprlock

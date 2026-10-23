@@ -23,3 +23,6 @@ sudo systemctl enable --now wpa_supplicant
 sudo systemctl enable NetworkManager
 sudo systemctl reset-failed NetworkManager.service 2>/dev/null || true
 sudo systemctl restart NetworkManager.service   # single start, loads the openvpn plugin
+
+# wait for connectivity so later steps that download things don't race the restart
+nm-online -q -t 60 || echo "warning: network not up after NetworkManager restart" >&2

@@ -66,7 +66,16 @@ pkg_uninstall() {
 
 link() {
     local src="$DEV_ROOT/$1" dst="$2"
+    [[ -e "$src" ]] || { log "link: missing source $src"; return 1; }
+    [[ -L "$dst" && "$(readlink "$dst")" == "$src" ]] && return 0
     mkdir -p "$(dirname "$dst")"
+    # a real file/dir (e.g. an app's default config) would make ln nest the
+    # link inside it instead of replacing it — move it aside first
+    if [[ -e "$dst" && ! -L "$dst" ]]; then
+        local bak="$dst.bak.$(date +%Y%m%d%H%M%S)"
+        mv "$dst" "$bak"
+        log "backed up $dst -> $bak"
+    fi
     ln -sfn "$src" "$dst"
     log "linked $dst -> $src"
 }
