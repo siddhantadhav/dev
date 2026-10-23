@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-set -e
-command -v lazygit >/dev/null 2>&1 || pkg_install lazygit

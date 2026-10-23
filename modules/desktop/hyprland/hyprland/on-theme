@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# config/theme.lua reads the rendered templates/hypr.lua: reload, and set the
+# new cursor in the running session
+[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || exit 0
+hyprctl reload >/dev/null
+hyprctl setcursor "$CURSOR_THEME" 24 >/dev/null || true   # theme not installed yet
+exit 0

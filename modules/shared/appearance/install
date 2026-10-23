@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# How every Linux app looks, on any desktop: GTK (adw-gtk3 + libadwaita,
+# recoloured by templates/gtk{3,4}.css), Qt (Kvantum), icons (Papirus), the
+# cursor and the wallpaper. The theme's own files:
+#   Arch:   every theme's packages, from the AUR, so a theme switch never has
+#           to install anything
+#   Fedora: none of them are packaged; on-theme fetches the current theme's
+#           files from upstream into ~/.local/share (theme_fetch)
+# macOS: nothing; only the terminal apps are themed there.
+set -e
+[[ "$DEV_OS" == macos ]] && exit 0
+source "$DEV_ROOT/lib/theme.sh"
+
+pkg_install adw-gtk3 papirus-icon-theme kvantum kvantum-qt5
+# Flatpak GTK3 apps can't reach /usr/share/themes; they take adw-gtk3 from a
+# Flathub extension named after the gtk-theme setting
+if command -v flatpak >/dev/null 2>&1 && flatpak remotes --system | grep -q '^flathub'; then
+    for ext in org.gtk.Gtk3theme.adw-gtk3 org.gtk.Gtk3theme.adw-gtk3-dark; do
+        flatpak info "$ext" >/dev/null 2>&1 ||
+            sudo flatpak install --system --noninteractive -y flathub "$ext" ||
+            log "theme: could not install $ext from Flathub (the next run tries again)"
+    done
+fi
+
+if [[ "$DEV_OS" == arch ]]; then
+    pkgs=()
+    for t in $(theme_list); do
+        # shellcheck disable=SC2207
+        pkgs+=( $(theme_load "$t" >/dev/null && echo "$PACKAGES") )
+    done
+    # --sudoloop: building all of these outlasts sudo's 5 min timeout, and the
+    # install step at the end would otherwise stop at a password prompt
+    yay -S --needed --noconfirm --sudoloop "${pkgs[@]}"
+fi
+
+# one wallpaper for every desktop (hyprpaper.conf, GNOME's background)
+link wallpapers/a_street_with_buildings_and_signs.png "$HOME/.local/share/backgrounds/dev.png"

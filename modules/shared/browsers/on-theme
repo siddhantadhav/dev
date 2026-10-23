@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# The browsers' theme, as system-wide policy (sudo; skipped by --no-sudo).
+set -e
+
+# Browsers, via enterprise policy. Force-installing is the only scriptable way
+# to set a theme; a theme without a browser port drops ours, so the browser
+# falls back to its default. Takes effect on the browser's next start.
+#
+# Firefox also always gets Violentmonkey (a userscript manager, from Mozilla's
+# add-on site) for ./userscripts: media-position keeps the song
+# position that waybar's media module shows exact. Install the scripts with
+# ./dev userscripts. (This file owns policies.json.)
+VIOLENTMONKEY='"{aecec67f-0d10-4fa7-b7c7-609a2db280cf}": { "installation_mode": "force_installed", "install_url": "https://addons.mozilla.org/firefox/downloads/latest/violentmonkey/latest.xpi" }'
+# Linux reads /etc/firefox/policies; macOS only the app bundle's distribution folder
+ff_policies=/etc/firefox/policies/policies.json
+[[ "$DEV_OS" == macos ]] && ff_policies=/Applications/Firefox.app/Contents/Resources/distribution/policies.json
+if command -v firefox >/dev/null 2>&1 || [[ "$DEV_OS" == macos && -d /Applications/Firefox.app ]]; then
+    ext="$VIOLENTMONKEY"
+    [[ -n "$FIREFOX_THEME" ]] && ext+=", \"$FIREFOX_THEME\": { \"installation_mode\": \"force_installed\", \"install_url\": \"$FIREFOX_THEME_URL\" }"
+    write_root "$ff_policies" "{ \"policies\": { \"ExtensionSettings\": { $ext } } }"
+fi
+# Arch names the binary chromium, Fedora chromium-browser; both read /etc/chromium
+if command -v chromium >/dev/null 2>&1 || command -v chromium-browser >/dev/null 2>&1; then
+    list="[]"
+    [[ -n "$CHROMIUM_THEME" ]] && list="[ \"$CHROMIUM_THEME\" ]"
+    write_root /etc/chromium/policies/managed/dev-theme.json "{ \"ExtensionInstallForcelist\": $list }"
+fi

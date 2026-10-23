@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# dunst for notifications (notify-send from libnotify); its whole config is
+# the rendered templates/dunstrc
+set -e
+pkg_install dunst libnotify

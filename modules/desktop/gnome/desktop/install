@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# GNOME's session: Qt's style, the wallpaper, fonts and touchpad, matching
+# Hyprland's (hyprpaper.conf, kitty.conf, input.lua).
+set -e
+
+# Qt5/Qt6 through Kvantum (modules/shared/appearance). Hyprland sets
+# QT_STYLE_OVERRIDE in its environment.lua; a GNOME session reads
+# ~/.config/environment.d instead. Takes effect on next login.
+envd="$HOME/.config/environment.d/90-dev.conf"
+want="QT_STYLE_OVERRIDE=kvantum"
+if [[ "$(cat "$envd" 2>/dev/null)" != "$want" ]]; then
+    mkdir -p "$(dirname "$envd")"
+    printf '%s\n' "$want" > "$envd"
+    log "wrote $envd (applies on next login)"
+fi
+
+# the wallpaper modules/shared/appearance links, as on Hyprland
+wallpaper="file://$HOME/.local/share/backgrounds/dev.png"
+bg=org.gnome.desktop.background
+gsettings set $bg picture-uri "$wallpaper"
+gsettings set $bg picture-uri-dark "$wallpaper"
+gsettings set $bg picture-options zoom
+gsettings set org.gnome.desktop.screensaver picture-uri "$wallpaper"
+
+# the terminal's font for monospace text everywhere else too
+gsettings set org.gnome.desktop.interface monospace-font-name 'JetBrainsMono Nerd Font 11'
+
+tp=org.gnome.desktop.peripherals.touchpad
+gsettings set $tp natural-scroll true
+gsettings set $tp tap-to-click true

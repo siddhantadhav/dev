@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -e
-# tree-sitter CLI — nvim-treesitter's 'main' branch builds parsers from source
-# and needs it on PATH
-pkg_install neovim tree-sitter-cli

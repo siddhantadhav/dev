@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# dev — set up and change this machine. Everything lives in modules/ (see
+# lib/core.sh for what a module is); ~/.config/dev/env says which ones apply.
+#
+#   ./dev run [--dry] [filter]          install every module, then apply the theme;
+#                                       filter: only modules whose path matches
+#   ./dev theme                         list themes + accents, show the current one
+#   ./dev theme [--no-sudo] <t> [acc]   switch theme, e.g. catppuccin-latte blue
+#   ./dev theme apply [filter]          re-render and re-apply the current theme
+#   ./dev desktop <hyprland|gnome|none> switch this machine's desktop
+#   ./dev profile <personal|work>       switch this machine's profile
+#   ./dev userscripts [name]            install the Firefox userscripts (one click each)
+#
+# --no-sudo skips the system-wide parts (SDDM, folder colours, browser policies).
+set -euo pipefail
+
+cd "$(dirname "$0")"
+export DEV_ROOT="$PWD"
+source lib/core.sh
+source lib/pkg.sh
+source lib/theme.sh
+
+usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+cmd_run() {
+    local dry="" filter="" m
+    for arg in "$@"; do
+        case "$arg" in
+            --dry) dry=1 ;;
+            *)     filter="$arg" ;;
+        esac
+    done
+    log "os=$DEV_OS  desktop=$DEV_DESKTOP  profile=$DEV_PROFILE"
+    for m in $(modules); do
+        [[ -n "$filter" && "$(module_name "$m")" != *"$filter"* ]] && continue
+        if [[ -n "$dry" ]]; then
+            log "[dry] $(module_name "$m")"
+        else
+            module_run "$m" install
+        fi
+    done
+    [[ -n "$dry" ]] || theme_apply "$filter"
+    log "done"
+}
+
+cmd_theme() {
+    [[ "${1:-}" == --no-sudo ]] && { export DEV_NO_SUDO=1; shift; }
+    case "${1:-}" in
+        "")
+            echo "current: ${DEV_THEME:-$DEV_THEME_DEFAULT} ${DEV_ACCENT:-(default accent)}"
+            local t
+            for t in $(theme_list); do
+                ( . "$(theme_file "$t")"; printf '  %-22s %s (default %s)\n' "$t" "$ACCENTS" "$DEFAULT_ACCENT" )
+            done
+            ;;
+        apply)
+            theme_apply "${2:-}"
+            ;;
+        *)
+            local theme="$1" accent="${2:-}"
+            # keep the current accent across a flavor change when the new theme has it
+            if [[ -z "$accent" && -n "${DEV_ACCENT:-}" ]] && (theme_load "$theme" "$DEV_ACCENT") 2>/dev/null; then
+                accent="$DEV_ACCENT"
+            fi
+            theme_load "$theme" ${accent:+"$accent"}   # validates both
+            env_set DEV_THEME "$theme"
+            env_set DEV_ACCENT "$ACCENT"
+            theme_apply
+            ;;
+    esac
+}
+
+cmd_desktop() {
+    local d="${1:-}"
+    [[ -n "$d" ]] || usage 1
+    [[ "$d" == none || -d modules/desktop/$d ]] || { echo "no such desktop: $d (have: $(ls modules/desktop | xargs) none)" >&2; exit 1; }
+    env_set DEV_DESKTOP "$d"
+    # install the desktop, then re-apply the theme for it (waybar, GNOME Shell, ...)
+    [[ "$d" == none ]] || cmd_run "desktop/$d"
+    theme_apply
+}
+
+cmd_profile() {
+    local p="${1:-}"
+    [[ -n "$p" ]] || usage 1
+    [[ -d modules/profile/$p ]] || { echo "no such profile: $p (have: $(ls modules/profile | xargs))" >&2; exit 1; }
+    env_set DEV_PROFILE "$p"
+    # only the profile module (it re-links the gitconfig); a profile switch
+    # shouldn't depend on the full OS/package setup succeeding
+    module_run "$DEV_ROOT/modules/profile/$p" install
+}
+
+cmd_userscripts() {
+    "$DEV_ROOT/modules/shared/browsers/userscript-install" "$@"
+}
+
+case "${1:-}" in
+    run)         shift; cmd_run "$@" ;;
+    theme)       shift; cmd_theme "$@" ;;
+    desktop)     shift; cmd_desktop "$@" ;;
+    profile)     shift; cmd_profile "$@" ;;
+    userscripts) shift; cmd_userscripts "$@" ;;
+    -h|--help|help|"") usage ;;
+    *)           echo "unknown command: $1" >&2; usage 1 ;;
+esac

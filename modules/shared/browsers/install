@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Firefox and Chromium. The browser named in Hyprland's programs.lua (Super+B,
+# the rofi launcher's web searches) becomes the system default on any Linux
+# desktop, so links clicked in any app open in it too. xdg-mime writes
+# ~/.config/mimeapps.list, keeping its other entries. macOS asks the user
+# itself, so it's skipped there.
+set -e
+pkg_install firefox chromium
+[[ "$DEV_OS" == macos ]] && exit 0
+browser="$(sed -n 's/^ *browser *= *"\([^"]*\)".*/\1/p' "$DEV_ROOT/modules/desktop/hyprland/hyprland/config/programs.lua")"
+# Arch: firefox.desktop; Fedora: org.mozilla.firefox.desktop, chromium-browser.desktop
+desktop=""
+for d in "$browser.desktop" "org.mozilla.$browser.desktop" "$browser-browser.desktop"; do
+    [[ -n "$browser" && -f "/usr/share/applications/$d" ]] && { desktop="$d"; break; }
+done
+if [[ -z "$desktop" ]]; then
+    log "default browser: no .desktop file for '$browser', leaving it as is"
+    exit 0
+fi
+for type in x-scheme-handler/http x-scheme-handler/https text/html application/xhtml+xml; do
+    if [[ "$(xdg-mime query default "$type")" != "$desktop" ]]; then
+        xdg-mime default "$desktop" "$type"
+        log "default for $type: $desktop"
+    fi
+done

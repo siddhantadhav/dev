@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# config/style.css @imports theme.css next to it: a (gitignored) link to the
+# rendered templates/waybar.css, so it resolves whether waybar starts via
+# ~/.config/waybar or config/reload.sh
+link_rendered waybar.css "$MODULE/config/theme.css"
+pkill -USR2 -x waybar   # reload config + style
+exit 0

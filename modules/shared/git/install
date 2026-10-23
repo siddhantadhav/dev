@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# git config (identity comes from the profile module: ~/.gitconfig.local)
+# and the GitHub CLI
+set -e
+pkg_install github-cli
+link gitconfig "$HOME/.gitconfig"

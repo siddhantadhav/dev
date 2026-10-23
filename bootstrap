@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # bootstrap — take a bare Arch, Fedora or macOS machine to the point where
-# ./run can take over.
+# ./dev run can take over.
 # usage: bash <(curl -sSL https://raw.githubusercontent.com/siddhantadhav/dev/main/bootstrap)
 set -e
 
@@ -47,4 +47,4 @@ if [[ ! -f "$HOME/.config/dev/env" ]]; then
     fi
 fi
 
-cd "$DEV_DIR" && ./run
+cd "$DEV_DIR" && ./dev run

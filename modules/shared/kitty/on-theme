@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# running kittys reload their config
+pkill -USR1 -x kitty
+exit 0

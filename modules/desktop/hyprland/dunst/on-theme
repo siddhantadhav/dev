@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+link_rendered dunstrc "$HOME/.config/dunst/dunstrc"
+pgrep -x dunst >/dev/null && dunstctl reload
+exit 0

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# GNOME Shell (top bar, quick settings, notifications, overview, OSDs, lock
+# screen) in the theme's colours: the installed shell's own stylesheet,
+# recoloured, set through the User Themes extension
+set -e
+schema=org.gnome.shell.extensions.user-theme
+gsettings list-keys "$schema" >/dev/null 2>&1 || exit 0
+
+dir="$THEME_DATA/themes/$SHELL_THEME/gnome-shell"
+mkdir -p "$dir"
+./recolor "$THEME_OUT/colors.json" "$dir/gnome-shell.css" "$BAR_GLASS_FRAC"
+gsettings set "$schema" name "$SHELL_THEME"
+# the previous themes' copies
+for d in "$THEME_DATA"/themes/dev-*; do
+    [[ "$d" == "$THEME_DATA/themes/$SHELL_THEME" ]] || rm -rf "$d"
+done

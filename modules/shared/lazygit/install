@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# lazygit; its colours come from the rendered templates/lazygit.yml, through
+# LG_CONFIG_FILE (modules/shared/zsh/dev-profile.sh)
+set -e
+command -v lazygit >/dev/null 2>&1 || pkg_install lazygit
+# LG_CONFIG_FILE fails if any file it lists is missing
+mkdir -p "$HOME/.config/lazygit"
+touch "$HOME/.config/lazygit/config.yml"

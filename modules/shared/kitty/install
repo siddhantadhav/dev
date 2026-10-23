@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# kitty, the terminal everywhere; kitty.conf includes the rendered
+# templates/kitty.conf for colours and background opacity
+set -e
+pkg_install kitty
+link kitty.conf "$HOME/.config/kitty/kitty.conf"

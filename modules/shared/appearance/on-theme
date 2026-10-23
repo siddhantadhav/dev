@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Point GTK, Qt, icons and the cursor at the current theme, then the
+# system-wide parts (sudo; skipped by --no-sudo): the SDDM login screen and
+# Papirus' folder colour. GTK/Qt apps pick it up when reopened.
+set -e
+[[ "$DEV_OS" == macos ]] && exit 0
+
+# Fedora has no packages for the theme's cursor, Kvantum and icon files
+[[ "$DEV_OS" == fedora ]] && theme_fetch
+
+# GTK is adw-gtk3 / libadwaita recoloured: libadwaita ignores gtk-theme-name
+# and reads only ~/.config/gtk-4.0/gtk.css; adw-gtk3 takes the same colours
+# from ~/.config/gtk-3.0/gtk.css
+link_rendered gtk-settings.ini "$HOME/.config/gtk-3.0/settings.ini"
+link_rendered gtk-settings.ini "$HOME/.config/gtk-4.0/settings.ini"
+link_rendered gtk4.css         "$HOME/.config/gtk-4.0/gtk.css"
+link_rendered gtk3.css         "$HOME/.config/gtk-3.0/gtk.css"
+link_rendered kvantum.kvconfig "$HOME/.config/Kvantum/kvantum.kvconfig"
+
+# GNOME reads these directly; on Hyprland xdg-desktop-portal-gtk passes
+# color-scheme on to GTK4, Qt 6.5+, Firefox, Chromium and Electron apps
+if command -v gsettings >/dev/null 2>&1; then
+    gs() { gsettings set org.gnome.desktop.interface "$@"; }
+    gs color-scheme "prefer-$MODE"
+    gs gtk-theme    "$GTK_THEME"
+    gs icon-theme   "$ICON_THEME"
+    gs cursor-theme "$CURSOR_THEME"
+    gs cursor-size  24
+    # libadwaita's accent (buttons, toggles, selections); GNOME 47+
+    gs accent-color "$GNOME_ACCENT" 2>/dev/null || true
+fi
+
+# Flatpak apps can't see ~/.config/gtk-{3,4}.0 or ~/.local/share/icons by
+# default; GTK3 ones get adw-gtk3 itself from Flathub (install)
+if command -v flatpak >/dev/null 2>&1; then
+    flatpak override --user \
+        --filesystem=xdg-config/gtk-3.0:ro --filesystem=xdg-config/gtk-4.0:ro \
+        --filesystem=xdg-data/themes:ro --filesystem=xdg-data/icons:ro \
+        --unset-env=GTK_THEME
+fi
+
+# Electron apps don't take GTK themes, only dark/light. Teams for Linux (the
+# package or the Flatpak, when installed) follows the system's when told to;
+# this sets just that key in its config.json.
+for teams in "$HOME/.config/teams-for-linux" \
+             "$HOME/.var/app/com.github.IsmaelMartinez.teams_for_linux/config/teams-for-linux"; do
+    [[ -d "$teams" ]] || continue
+    python3 - "$teams/config.json" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        config = json.load(f)
+except FileNotFoundError:
+    config = {}
+if config.get("appearance", {}).get("followSystemTheme") is not True:
+    config.setdefault("appearance", {})["followSystemTheme"] = True
+    with open(path + ".tmp", "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+    os.replace(path + ".tmp", path)
+PY
+done
+
+# SDDM — themes without a port keep whatever is set
+if [[ -n "$SDDM_THEME" && -d "/usr/share/sddm/themes/$SDDM_THEME" ]]; then
+    write_root /etc/sddm.conf.d/theme.conf "[Theme]
+Current=$SDDM_THEME"
+fi
+
+[[ -n "${DEV_NO_SUDO:-}" ]] && exit 0
+
+# Papirus folder colour (rewrites links inside /usr/share/icons/Papirus*).
+# Needs sudo throughout, so --no-sudo skips it (it's last for that reason).
+# Arch has papirus-folders and the catppuccin colours as AUR packages; Fedora
+# gets the script into ~/.local/bin and the colours copied in, as their READMEs say.
+if [[ -n "$PAPIRUS_COLOR" && "$DEV_OS" == fedora && -d /usr/share/icons/Papirus ]]; then
+    if ! command -v papirus-folders >/dev/null 2>&1; then
+        mkdir -p "$HOME/.local/bin"
+        curl -fsSL --retry 3 --retry-all-errors -o "$HOME/.local/bin/papirus-folders" \
+            https://raw.githubusercontent.com/PapirusDevelopmentTeam/papirus-folders/master/papirus-folders
+        chmod 755 "$HOME/.local/bin/papirus-folders"
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    if [[ ! -e "/usr/share/icons/Papirus/64x64/places/folder-$PAPIRUS_COLOR.svg" ]]; then
+        src="$(fetch_pkg https://github.com/catppuccin/papirus-folders.git)"
+        sudo cp -r "$src/src/." /usr/share/icons/Papirus/
+        log "added the catppuccin folder colours to Papirus"
+    fi
+fi
+if [[ -n "$PAPIRUS_COLOR" ]] && command -v papirus-folders >/dev/null 2>&1; then
+    papirus=$([[ $MODE == dark ]] && echo Papirus-Dark || echo Papirus)
+    # papirus-folders recolours by relinking folder.svg; read the colour from there
+    # (its -l listing doesn't mark the current one in every version)
+    current="$(readlink "/usr/share/icons/$papirus/64x64/places/folder.svg" 2>/dev/null || true)"
+    current="${current#folder-}"; current="${current%.svg}"
+    # full path: sudo's PATH has no ~/.local/bin
+    [[ "$current" == "$PAPIRUS_COLOR" ]] || sudo "$(command -v papirus-folders)" -C "$PAPIRUS_COLOR" --theme "$papirus"
+fi

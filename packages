@@ -1,8 +1,8 @@
 # packages — every app once, with its package on each OS. Scripts install by
-# the first column (pkg_install in lib.sh), so the same list works everywhere.
+# the first column (pkg_install in lib/pkg.sh), so the same list works everywhere.
 #
 #   a,b                     several packages
-#   aur:pkg                 Arch User Repository (yay, runs/arch/02-aur-helper)
+#   aur:pkg                 Arch User Repository (yay, modules/os/arch)
 #   copr:owner/project:pkg  Fedora COPR, enabled on first use
 #   cask:pkg                Homebrew cask (GUI app)
 #   github:owner/repo:asset release binary into ~/.local/bin ({arch} = uname -m)
@@ -36,7 +36,7 @@ firefox                 firefox                     firefox                     
 # Homebrew disabled its chromium cask (unsigned builds)
 chromium                chromium                    chromium                                -
 docker                  docker,docker-compose,docker-buildx docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin cask:docker-desktop
-# Fedora has no Nerd Font package: runs/shared/08-fonts downloads it
+# Fedora has no Nerd Font package: modules/shared/fonts downloads it
 nerd-font               ttf-jetbrains-mono-nerd     -                                       cask:font-jetbrains-mono-nerd-font
 
 # --- theme -----------------------------------------------------------------------------------------

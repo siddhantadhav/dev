@@ -1,8 +1,0 @@
-[init]
-	defaultBranch = main
-[pull]
-	rebase = true
-
-# identity comes from the active profile (linked by runs/profile-*/)
-[include]
-	path = ~/.gitconfig.local

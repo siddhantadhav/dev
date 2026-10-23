@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Hyprland, with config/ as ~/.config/hypr (config/programs.lua names the
+# terminal, file manager, launcher and browser everything else uses), and what
+# its config and keybinds call:
+#   kitty            terminal + waybar popups
+#   pipewire stack   audio; wpctl for the volume keys and waybar
+#   playerctl        media keys + waybar's now-playing
+#   upower, power-profiles-daemon   waybar's battery module
+#   brightnessctl    the brightness keys
+#   hyprlock         Super+L (config/hyprlock.conf + templates/hyprlock.conf)
+#   hyprpaper        the wallpaper (config/hyprpaper.conf; modules/shared/appearance)
+#   xdg-desktop-portal-gtk  broadcasts dark/light (gsettings color-scheme) to
+#                    GTK4, Qt 6.5+, Firefox, Chromium and Electron apps
+set -e
+pkgs=(
+    hyprland hyprlock hyprpaper kitty
+    pipewire pipewire-pulse wireplumber
+    playerctl upower power-profiles-daemon brightnessctl
+    xdg-desktop-portal-gtk gsettings-desktop-schemas
+)
+pkg_install "${pkgs[@]}"
+
+ppd=$([[ "$DEV_OS" == fedora ]] && echo tuned-ppd || echo power-profiles-daemon)
+systemctl is-enabled --quiet "$ppd" || sudo systemctl enable --now "$ppd"
+
+link config "$HOME/.config/hypr"

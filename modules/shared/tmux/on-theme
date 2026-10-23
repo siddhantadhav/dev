@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# recolour running tmux sessions
+tmux has-session 2>/dev/null && tmux source-file "$THEME_OUT/tmux.conf"
+exit 0

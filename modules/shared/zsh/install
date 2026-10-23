@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# zsh as the login shell, with zshrc and dev-profile.sh (PATH and env per
+# OS/profile, sourced by zshrc)
+set -e
+pkg_install zsh
+
+ZSH_PATH="$(command -v zsh)"
+grep -qx "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
+[[ "$SHELL" == "$ZSH_PATH" ]] || chsh -s "$ZSH_PATH"
+
+link zshrc          "$HOME/.zshrc"
+link dev-profile.sh "$HOME/.config/dev/profile.sh"

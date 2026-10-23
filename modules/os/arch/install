@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Arch prep, before every other module: base packages and yay (the AUR
+# helper pkg_install uses for aur: packages)
+set -e
+pkg_install base-devel git curl unzip
+
+command -v yay >/dev/null 2>&1 && exit 0
+dir="$(fetch_pkg https://aur.archlinux.org/yay-bin.git)"
+cd "$dir"
+makepkg -si --noconfirm

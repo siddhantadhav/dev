@@ -1,0 +1,23 @@
+// rofi(5): shared by the launcher (Super+Space, scripts/launcher) and the
+// waybar menus (wifi, power). Launcher-only flags live in scripts/launcher.
+configuration {
+    show-icons:      true;
+    terminal:        "kitty";
+    // fuzzy search: "ffx" finds Firefox; any case, accents ignored. Results
+    // stay in section order (apps by use, then Search Google, clipboard,
+    // files, …): ranking the whole list by match let loose fuzzy matches
+    // (an emoji named "Index pointing at the viewer" for "how to tie a tie")
+    // push apps and Search Google out of view
+    matching:        "fuzzy";
+    sort:            false;
+    case-sensitive:  false;
+    normalize-match: true;
+    drun-display-format: "{name}";
+    // apps match on their name and description ("Terminal emulator"), not on
+    // launch commands or categories: web apps whose command runs firefox
+    // otherwise matched "fire"
+    drun-match-fields:   "name,generic";
+}
+
+// colours, glass and icon theme: rendered by ~/dev (./dev theme)
+@theme "~/.config/dev/theme/rofi.rasi"

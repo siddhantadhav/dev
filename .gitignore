@@ -1,5 +1,5 @@
 *.swp
 *secret
 lazy-lock.json
-configs/hyprland/waybar/theme.css
+modules/desktop/hyprland/waybar/config/theme.css
 __pycache__/
