@@ -51,7 +51,8 @@ A module folder can have:
   `packages`), links (`link <file in the module> <destination>`), settings.
   Must be safe to re-run.
 - `templates/` — rendered for the current theme into `~/.config/dev/theme/`
-  (same file names), which the app's config includes
+  (same file names), which the app's config includes; that folder only keeps
+  what this machine's modules render (another desktop's files are removed)
 - `on-theme` — run after rendering: links to the rendered files, live reload
 - the app's config files, or `config/` when the whole folder is linked
 
@@ -152,6 +153,8 @@ apps when reopened, browsers on restart. Electron apps only follow dark/light
 - `modules/shared/appearance` — installs every theme's packages on Arch; on
   Fedora its `on-theme` downloads the current theme's files from upstream into
   `~/.local/share` (`theme_fetch` in `family.sh`)
+- Wallpaper: one image for both desktops, in `modules/shared/appearance/wallpapers/`,
+  linked to `~/.local/share/backgrounds/dev.png` (hyprpaper and GNOME use that path)
 - `themes/style.sh` — the look for every theme: transparency of panels, the bar
   (`BAR_GLASS`), terminal and windows, how much darker the backgrounds get;
   values are tuned so text stays readable over the wallpaper
