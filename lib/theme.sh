@@ -188,10 +188,18 @@ theme_apply() {
     export -f theme_fetch
 
     mkdir -p "$THEME_OUT"
+    local rendered=" "
     for m in $(modules); do
         for t in "$m"/templates/*; do
-            [[ -f "$t" ]] && theme_render "$t" "$THEME_OUT/$(basename "$t")"
+            [[ -f "$t" ]] || continue
+            theme_render "$t" "$THEME_OUT/$(basename "$t")"
+            rendered+="$(basename "$t") "
         done
+    done
+    # files no module of this machine renders any more (another desktop's,
+    # a removed module's)
+    for t in "$THEME_OUT"/*; do
+        [[ -f "$t" && "$rendered" != *" $(basename "$t") "* ]] && rm "$t"
     done
     for m in $(modules); do
         [[ -n "$filter" && "$(module_name "$m")" != *"$filter"* ]] && continue
