@@ -17,3 +17,6 @@ require("input")           -- keyboard, touchpad, gestures, devices
 require("keybindings")     -- key/mouse binds
 require("window-rules")    -- window & layer rules
 require("autostart")       -- processes started with Hyprland
+
+-- hyprmon: managed monitor profile include
+require("hyprmon")
