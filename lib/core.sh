@@ -3,7 +3,7 @@
 # Sourced by ./dev; functions are exported to the module scripts it runs.
 
 # machine-local settings (not tracked in git): DEV_PROFILE, DEV_DESKTOP,
-# DEV_THEME, DEV_ACCENT
+# DEV_AUDIO, DEV_THEME, DEV_ACCENT
 DEV_ENV="$HOME/.config/dev/env"
 [[ -f "$DEV_ENV" ]] && source "$DEV_ENV"
 export DEV_ROOT="${DEV_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -39,6 +39,11 @@ if [[ -z "${DEV_DESKTOP:-}" ]]; then
 fi
 export DEV_DESKTOP
 
+# --- audio -------------------------------------------------------------------
+# which modules/audio/<name> this machine gets, for its speakers: none (plain
+# PipeWire) unless set (./dev audio <name>)
+export DEV_AUDIO="${DEV_AUDIO:-none}"
+
 # --- helpers -----------------------------------------------------------------
 log() { printf '\033[1;34m[dev]\033[0m %s\n' "$*"; }
 
@@ -56,13 +61,14 @@ env_set() {
 #   install     run by `dev run`: packages, links, settings (idempotent)
 #   templates/  rendered for the current theme into ~/.config/dev/theme/
 #   on-theme    run after rendering: links to the rendered files, reloads
-# This machine's modules, in order: its OS, its desktop's, the shared ones,
-# its profile.
+# This machine's modules, in order: its OS, its desktop's, its audio profile,
+# the shared ones, its profile.
 modules() {
     local d
     shopt -s nullglob
     for d in "$DEV_ROOT/modules/os/$DEV_OS" \
              "$DEV_ROOT/modules/desktop/$DEV_DESKTOP"/*/ \
+             "$DEV_ROOT/modules/audio/$DEV_AUDIO" \
              "$DEV_ROOT/modules/shared"/*/ \
              "$DEV_ROOT/modules/profile/$DEV_PROFILE"; do
         [[ -d "$d" ]] && echo "${d%/}"

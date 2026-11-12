@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# audio profile speaker-basscut (./dev audio speaker-basscut): for laptop
+# speakers that crackle when bass drives them at high volume (first: the Lenovo
+# with a Realtek ALC236). speaker-basscut.conf adds a PipeWire filter that cuts
+# below 180 Hz; speaker-route (a user service) makes it the default output while
+# the speakers play and switches back to the card for headphones.
+set -e
+pkg_install libpulse   # pactl
+link speaker-basscut.conf "$HOME/.config/pipewire/pipewire.conf.d/speaker-basscut.conf"
+link speaker-route "$HOME/.local/bin/speaker-route"
+link speaker-route.service "$HOME/.config/systemd/user/speaker-route.service"
+
+# PipeWire reads the filter only at start
+pactl list sinks short 2>/dev/null | grep -q speaker_basscut ||
+    systemctl --user restart pipewire pipewire-pulse wireplumber
+systemctl --user daemon-reload
+systemctl --user enable speaker-route.service
+systemctl --user restart speaker-route.service

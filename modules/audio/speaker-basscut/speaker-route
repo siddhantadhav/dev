@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Default output follows the card's active port: the bass-cut filter while the
+# laptop speakers play, the card itself once headphones are plugged in. Leaves
+# any other default (Bluetooth, HDMI) alone. Run by speaker-route.service.
+set -uo pipefail
+card=alsa_output.pci-0000_00_1f.3.analog-stereo
+filter=speaker_basscut
+
+update() {
+    local def port want
+    def=$(pactl get-default-sink) || return
+    [[ "$def" == "$card" || "$def" == "$filter" ]] || return
+    port=$(pactl list sinks | awk -v s="$card" '$1 == "Name:" {n = $2} n == s && /Active Port:/ {print $3}')
+    [[ "$port" == analog-output-speaker ]] && want=$filter || want=$card
+    [[ "$def" == "$want" ]] || pactl set-default-sink "$want"
+}
+
+update
+# exits when PipeWire restarts; the service starts it again. stdbuf: into a
+# pipe, pactl buffers events in 4 KB blocks and a port change arrives late.
+stdbuf -oL pactl subscribe | while read -r line; do
+    [[ "$line" == *" on sink "* || "$line" == *" on server "* || "$line" == *" on card "* ]] && update
+done

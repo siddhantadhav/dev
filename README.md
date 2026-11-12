@@ -22,6 +22,7 @@ profile and, on Linux, a desktop, then runs everything.
 ./dev theme               # list themes + accents, show the current one
 ./dev desktop hyprland    # switch this machine's desktop (hyprland / gnome / none)
 ./dev profile work        # switch this machine's profile (personal / work)
+./dev audio speaker-basscut  # switch this machine's audio profile (or none)
 ```
 
 `DEV_OS=arch DEV_DESKTOP=hyprland ./dev run --dry` previews another machine.
@@ -40,6 +41,7 @@ modules/
   os/<os>/                 package-manager prep: yay, the docker-ce repo, Homebrew
   desktop/<desktop>/<app>/ hyprland: hyprland dunst network rofi thunar waybar
                            gnome: shell keys desktop
+  audio/<profile>/         per machine, for its speakers: speaker-basscut
   shared/<app>/            every OS: appearance browsers docker fonts git go
                            kitty lazygit nvim tmux zsh
   profile/<profile>/       personal / work: git identity, profile-only tools
@@ -57,9 +59,21 @@ A module folder can have:
 - the app's config files, or `config/` when the whole folder is linked
 
 `./dev run` runs the `install`s in order (the OS, the desktop's modules, the
-shared ones, the profile), then applies the theme. `~/.config/dev/env` (not
-tracked) holds `DEV_PROFILE`, `DEV_DESKTOP`, `DEV_THEME`, `DEV_ACCENT`;
-`DEV_DESKTOP` defaults to `hyprland` on Arch, `gnome` on Fedora, `none` on macOS.
+audio profile, the shared ones, the profile), then applies the theme.
+`~/.config/dev/env` (not tracked) holds `DEV_PROFILE`, `DEV_DESKTOP`,
+`DEV_AUDIO`, `DEV_THEME`, `DEV_ACCENT`; `DEV_DESKTOP` defaults to `hyprland` on
+Arch, `gnome` on Fedora, `none` on macOS; `DEV_AUDIO` defaults to `none` (plain
+PipeWire).
+
+## Audio profiles
+
+A machine opts into one with `./dev audio <name>`; switching removes what the
+previous one linked in (PipeWire filters, services) and restarts PipeWire.
+
+- `speaker-basscut` — laptop speakers that crackle at high volume: a PipeWire
+  filter cuts below 180 Hz in front of them, and `speaker-route` (user service)
+  makes it the default output only while the speakers play, so headphones get
+  the full signal.
 
 ## Desktop: Hyprland (any Linux)
 

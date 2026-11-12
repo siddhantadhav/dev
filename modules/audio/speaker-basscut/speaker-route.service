@@ -1,0 +1,11 @@
+[Unit]
+Description=Send audio through the speaker bass cut while the laptop speakers play
+After=pipewire-pulse.service wireplumber.service
+
+[Service]
+ExecStart=%h/.local/bin/speaker-route
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

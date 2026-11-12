@@ -57,6 +57,7 @@ pipewire                pipewire                    pipewire                    
 pipewire-pulse          pipewire-pulse              pipewire-pulseaudio                     -
 wireplumber             wireplumber                 wireplumber                             -
 rtkit                   rtkit                       rtkit                                   -
+libpulse                libpulse                    pulseaudio-utils                        -
 playerctl               playerctl                   playerctl                               -
 upower                  upower                      upower                                  -
 # Fedora uses tuned-ppd (same D-Bus API; conflicts with power-profiles-daemon)
