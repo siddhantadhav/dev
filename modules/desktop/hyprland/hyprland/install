@@ -14,7 +14,7 @@
 set -e
 pkgs=(
     hyprland hyprlock hyprpaper kitty
-    pipewire pipewire-pulse wireplumber
+    pipewire pipewire-pulse wireplumber rtkit
     playerctl upower power-profiles-daemon brightnessctl
     xdg-desktop-portal-gtk gsettings-desktop-schemas
 )
