@@ -2,6 +2,8 @@
 source "$HOME/.config/dev/profile.sh"
 
 export EDITOR=nvim
+# emacs keys (Alt+Backspace, Ctrl+W, ...); zsh picks vi mode when $EDITOR contains "vi"
+bindkey -e
 alias vim=nvim
 alias ls='ls --color=auto'
 
