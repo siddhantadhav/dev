@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# brightness — every screen at once. brightnessctl only reaches the laptop
+# panel (/sys/class/backlight); external monitors take brightness over DDC/CI,
+# so after setting the panel this sends the same percentage to each of them
+# with ddcutil. waybar's backlight module and the brightness keys call it.
+#   brightness up | down    ±5% on brightnessctl's -e4 curve
+#   brightness cycle        30% → 60% → 100%
+set -euo pipefail
+
+level() { brightnessctl -m | cut -d, -f4 | tr -d %; }
+
+case "${1:-}" in
+    up)   brightnessctl -q -e4 -n2 set 5%+ ;;
+    down) brightnessctl -q -e4 -n2 set 5%- ;;
+    cycle)
+        now="$(level)"
+        if   (( now < 45 )); then next=60
+        elif (( now < 80 )); then next=100
+        else next=30
+        fi
+        brightnessctl -q set "$next%" ;;
+    *) echo "usage: brightness up|down|cycle" >&2; exit 2 ;;
+esac
+
+command -v ddcutil >/dev/null || exit 0
+dir="${XDG_RUNTIME_DIR:-/tmp}/brightness"
+mkdir -p "$dir"
+level > "$dir/target"
+
+# DDC buses of the external monitors. `ddcutil detect` takes a second or two,
+# so its answer is kept until the set of connected outputs changes. Only
+# "Display N" entries count: the laptop panel shows up as "Invalid display".
+buses() {
+    local key
+    key="$(grep -l '^connected' /sys/class/drm/card*-*/status | paste -sd' ')"
+    if [[ "$key" != "$(head -n1 "$dir/buses" 2>/dev/null || true)" ]]; then
+        { echo "$key"
+          ddcutil detect --terse 2>/dev/null |
+              awk '/^Display /{d=1; next} /^[^ ]/{d=0} d && /I2C bus:/{sub(/.*\/dev\/i2c-/, ""); print}'
+        } > "$dir/buses"
+        rm -f "$dir/applied"
+    fi
+    tail -n +2 "$dir/buses"
+}
+
+# A DDC write takes ~0.1 s per monitor and a scroll fires many events, so
+# writes queue on a lock and each sends only the newest target: a burst of
+# scroll notches ends in one or two writes instead of one per notch.
+(
+    flock 9
+    bus_list="$(buses)"
+    target="$(<"$dir/target")"
+    [[ "$target" == "$(cat "$dir/applied" 2>/dev/null || true)" ]] && exit 0
+    for bus in $bus_list; do
+        ddcutil --bus "$bus" --noverify setvcp 10 "$target" || true
+    done
+    echo "$target" > "$dir/applied"
+) 9>"$dir/lock" >/dev/null 2>&1 &

@@ -179,10 +179,11 @@
   "backlight": {
     "format": "{icon} {percent}%",
     "format-icons": ["󰃞", "󰃟", "󰃠"],
+    // shows the laptop panel; scripts/brightness sets external monitors to match
     // click: 30% → 60% → 100% · scroll: ±5%
-    "on-click": "$HOME/.config/waybar/scripts/brightness-cycle",
-    "on-scroll-up": "brightnessctl -e4 -n2 set 5%+",
-    "on-scroll-down": "brightnessctl -e4 -n2 set 5%-",
+    "on-click": "$HOME/.config/waybar/scripts/brightness cycle",
+    "on-scroll-up": "$HOME/.config/waybar/scripts/brightness up",
+    "on-scroll-down": "$HOME/.config/waybar/scripts/brightness down",
     "tooltip": false
   },
 

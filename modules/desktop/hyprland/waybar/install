@@ -11,12 +11,20 @@ set -e
 #   bluetui              Bluetooth settings: pairing, trust, rename (right click)
 #   cava                 the media module's equalizer bars (scripts/media)
 #   inotify-tools        reload.sh (live-reload while editing the bar)
+#   ddcutil              scripts/brightness: external monitors over DDC/CI
 pkgs=(
     waybar python
     pavucontrol btop nm-connection-editor inotify-tools
-    bluez bluez-utils bluetui cava
+    bluez bluez-utils bluetui cava ddcutil
 )
 pkg_install "${pkgs[@]}"
+
+# ddcutil talks to monitors through /dev/i2c-*. Its package grants the seat
+# user access (udev uaccess) and, on Arch, loads i2c-dev at boot; make sure of
+# the boot part everywhere, and load it now rather than at the next boot.
+[[ -e /usr/lib/modules-load.d/ddcutil.conf ]] ||
+    echo i2c-dev | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null
+compgen -G '/dev/i2c-*' >/dev/null || sudo modprobe i2c-dev
 
 systemctl is-enabled --quiet bluetooth || sudo systemctl enable --now bluetooth
 
