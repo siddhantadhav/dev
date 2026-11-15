@@ -1,0 +1,13 @@
+#!/bin/sh
+# Xsetup — SDDM runs this as root before the login screen appears.
+# Xorg shows the login screen only on the primary GPU's outputs, so on a hybrid
+# laptop a monitor wired to the other GPU stays dark until the desktop starts.
+# Every other GPU that can take a picture ("Sink Output") is fed the primary's
+# (reverse PRIME), then whatever is connected is turned on. With one GPU there
+# is nothing to feed and only --auto runs.
+primary=$(xrandr --listproviders | sed -n 's/^Provider 0: id: \(0x[0-9a-f]*\).*/\1/p')
+xrandr --listproviders | sed -n 's/^Provider [1-9][0-9]*: id: \(0x[0-9a-f]*\).*Sink Output.*/\1/p' |
+    while read -r p; do
+        xrandr --setprovideroutputsource "$p" "$primary"
+    done
+xrandr --auto

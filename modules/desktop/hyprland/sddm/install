@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# SDDM's X11 login screen on every connected monitor, including ones wired to
+# a second GPU (Xsetup). Only when SDDM is the login manager; the repo doesn't
+# install it.
+#   xrandr    what Xsetup runs
+set -e
+command -v sddm >/dev/null || exit 0
+pkg_install xrandr
+
+# SDDM runs it as root: a root-owned copy, not a link into this (user-owned) repo
+cmp -s Xsetup /etc/sddm/Xsetup || sudo install -D -m 755 Xsetup /etc/sddm/Xsetup
+conf=$'[X11]\nDisplayCommand=/etc/sddm/Xsetup'
+[[ "$(cat /etc/sddm.conf.d/xsetup.conf 2>/dev/null)" == "$conf" ]] ||
+    printf '%s\n' "$conf" | sudo install -D -m 644 /dev/stdin /etc/sddm.conf.d/xsetup.conf

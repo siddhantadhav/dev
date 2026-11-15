@@ -63,6 +63,8 @@ upower                  upower                      upower                      
 # Fedora uses tuned-ppd (same D-Bus API; conflicts with power-profiles-daemon)
 power-profiles-daemon   power-profiles-daemon       tuned-ppd                               -
 brightnessctl           brightnessctl               brightnessctl                           -
+ddcutil                 ddcutil                     ddcutil                                 -
+xrandr                  xorg-xrandr                 xrandr                                  -
 waybar                  waybar                      waybar                                  -
 pavucontrol             pavucontrol                 pavucontrol                             -
 nm-connection-editor    nm-connection-editor        nm-connection-editor                    -
